@@ -1,0 +1,719 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>SELENE // SITE 07 — 月面建设工地与开发中心</title>
+<style>
+:root{--fg:#e9eef5;--dim:#8a96a8;--line:rgba(180,210,255,.2);--panel:rgba(7,10,15,.62);--acc:#ff7a1f;--cy:#8fd6ff;
+  --mono:"Cascadia Mono","JetBrains Mono",Consolas,ui-monospace,monospace;
+  --sans:"Segoe UI","PingFang SC","Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:#000;overflow:hidden;color:var(--fg);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+canvas#gl{display:block;position:fixed;inset:0;width:100%;height:100%;touch-action:none;outline:none}
+#hud{position:fixed;inset:0;pointer-events:none;user-select:none}
+#lines{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+#lines polyline{fill:none;stroke:rgba(170,215,255,.55);stroke-width:1}
+#lines circle{fill:#cfeaff}
+.lab{position:absolute;left:0;top:0;white-space:nowrap;padding:4px 9px 5px;background:rgba(6,9,14,.66);border:1px solid var(--line);will-change:transform}
+.lab.r{border-left:2px solid var(--cy)}.lab.l{border-right:2px solid var(--cy)}
+.lab b{display:block;font-size:12px;font-weight:600;letter-spacing:.06em;line-height:1.25}
+.lab i{display:block;font:10px/1.25 var(--mono);color:var(--dim);letter-spacing:.14em;font-style:normal}
+#title{position:absolute;left:28px;top:24px;max-width:46vw}
+#title .k{font:11px/1 var(--mono);letter-spacing:.3em;color:var(--dim);display:flex;align-items:center;gap:10px}
+#title .k::before{content:"";width:9px;height:9px;background:var(--acc)}
+#title h1{margin:11px 0 7px;font-size:25px;font-weight:600;letter-spacing:.09em;line-height:1.2;text-wrap:balance}
+#title p{margin:0;font:11px/1.5 var(--mono);letter-spacing:.14em;color:var(--dim)}
+#env{position:absolute;right:28px;top:24px;width:248px;background:var(--panel);border:1px solid var(--line);padding:14px 16px 13px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#env .h{display:flex;justify-content:space-between;font:10px/1 var(--mono);letter-spacing:.2em;color:var(--dim)}
+#env .h span:last-child{color:#7dffb0}
+#env .clock{font:500 29px/1 var(--mono);letter-spacing:.05em;margin:12px 0 4px;font-variant-numeric:tabular-nums}
+#env .sub{font:10px/1 var(--mono);letter-spacing:.16em;color:var(--dim);padding-bottom:12px;border-bottom:1px solid var(--line)}
+#env dl{margin:11px 0 0;display:grid;grid-template-columns:1fr auto;row-gap:9px;align-items:baseline}
+#env dt{font-size:12px;color:#b9c3d1;letter-spacing:.08em}
+#env dd{margin:0;font:500 14px/1 var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+#env dd small{font-size:10px;color:var(--dim);margin-left:3px}
+#env .bar{grid-column:1/3;height:3px;background:rgba(255,255,255,.1);margin-top:-2px}
+#env .bar s{display:block;height:100%;width:80%;background:var(--cy);transition:width .8s}
+#views{position:absolute;left:28px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;pointer-events:auto}
+#views button{all:unset;cursor:pointer;width:104px;padding:10px 12px 10px 14px;background:var(--panel);border:1px solid var(--line);border-left:2px solid transparent;
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:background .2s,border-color .2s}
+#views button b{display:block;font-size:14px;font-weight:600;letter-spacing:.2em}
+#views button i{display:block;font:9px/1 var(--mono);letter-spacing:.18em;color:var(--dim);font-style:normal;margin-top:5px}
+#views button:hover{background:rgba(26,34,46,.78)}
+#views button:focus-visible{outline:1px solid var(--cy);outline-offset:2px}
+#views button.on{border-left-color:var(--acc);background:rgba(30,36,46,.85)}
+#hint{position:absolute;left:0;right:0;bottom:18px;text-align:center;font:10px/1 var(--mono);letter-spacing:.22em;color:rgba(160,175,195,.6)}
+#load{position:fixed;inset:0;background:#000;display:grid;place-items:center;font:12px/1.8 var(--mono);letter-spacing:.24em;color:var(--dim);text-align:center;transition:opacity .9s;z-index:5}
+#load.off{opacity:0;pointer-events:none}
+@media (max-width:760px){
+  #title{left:16px;top:14px;max-width:58vw}#title h1{font-size:16px;margin:8px 0 4px}#title p{display:none}
+  #env{right:12px;top:12px;width:150px;padding:10px}#env .clock{font-size:18px}#env dt{font-size:10px}#env dd{font-size:11px}#env .sub{display:none}
+  #views{left:0;right:0;top:auto;bottom:40px;transform:none;flex-direction:row;justify-content:center;gap:6px}
+  #views button{width:auto;padding:9px 12px}#views button i{display:none}
+  .lab i{display:none}#hint{bottom:12px}
+}
+</style>
+</head>
+<body>
+<canvas id="gl" tabindex="0"></canvas>
+<div id="hud">
+  <svg id="lines"></svg>
+  <div id="labels"></div>
+  <header id="title">
+    <div class="k">SELENE // SITE 07</div>
+    <h1>月面建设工地与开发中心</h1>
+    <p>LUNAR CONSTRUCTION SITE &amp; DEV CENTER · 89.5°S 沙克尔顿坑缘</p>
+  </header>
+  <aside id="env">
+    <div class="h"><span>环境 / ENV</span><span>● LIVE</span></div>
+    <div class="clock" id="e-clock">--:--:--</div>
+    <div class="sub" id="e-sub">站点时间 · 月夜 第 9 日</div>
+    <dl>
+      <dt>舱外温度</dt><dd><span id="e-out">−173.0</span><small>°C</small></dd>
+      <dt>舱内温度</dt><dd><span id="e-in">21.5</span><small>°C</small></dd>
+      <dt>O₂ 浓度</dt><dd><span id="e-o2">20.9</span><small>%</small></dd>
+      <dt>电力负载</dt><dd><span id="e-kw">41.2</span><small>kW</small></dd>
+      <dt>储能</dt><dd><span id="e-bat">82</span><small>%</small></dd>
+      <div class="bar"><s id="e-bar"></s></div>
+    </dl>
+  </aside>
+  <nav id="views">
+    <button data-v="overview" class="on"><b>全景</b><i>OVERVIEW</i></button>
+    <button data-v="entry"><b>入口</b><i>AIRLOCK</i></button>
+    <button data-v="print"><b>打印区</b><i>PRINT YARD</i></button>
+    <button data-v="inside"><b>舱内</b><i>INTERIOR</i></button>
+  </nav>
+  <div id="hint">拖拽旋转 · 滚轮缩放 · 右键平移</div>
+</div>
+<div id="load"><div id="load-t">正在装配沙盘 …<br>ASSEMBLING SITE 07</div></div>
+
+<!-- three.js 从 CDN 加载：三路镜像并行探测，谁先通用谁 -->
+<script>
+(function(){
+  var V='0.170.0', CDNS=['https://cdn.jsdelivr.net/npm/three@'+V,'https://unpkg.com/three@'+V,'https://registry.npmmirror.com/three/'+V+'/files','https://fastly.jsdelivr.net/npm/three@'+V];
+  var ctrls=[];
+  function probe(b,i){return new Promise(function(res,rej){var c=new AbortController();ctrls[i]=c;var t=setTimeout(function(){c.abort();rej()},12000);
+    fetch(b+'/build/three.module.js',{signal:c.signal}).then(function(r){clearTimeout(t);r.ok?res(i):rej()}).catch(rej)})}
+  Promise.any(CDNS.map(probe)).then(function(i){
+    ctrls.forEach(function(c,j){if(j!==i)try{c.abort()}catch(e){}});
+    var b=CDNS[i];window.__CDN=b;
+    var im=document.createElement('script');im.type='importmap';
+    im.textContent=JSON.stringify({imports:{'three':b+'/build/three.module.js','three/addons/':b+'/examples/jsm/'}});
+    document.head.appendChild(im);
+    var s=document.createElement('script');s.type='module';s.textContent=document.getElementById('app').textContent;document.body.appendChild(s);
+  }).catch(function(){document.getElementById('load-t').innerHTML='无法加载 three.js<br>请检查网络后刷新'});
+  window.addEventListener('error',function(e){var l=document.getElementById('load');if(l&&!l.classList.contains('off'))document.getElementById('load-t').innerHTML='启动出错<br>'+(e.message||'')});
+})();
+</script>
+
+<script type="text/plain" id="app">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+const PI=Math.PI, TAU=PI*2, rad=d=>d*PI/180;
+const V=(x=0,y=0,z=0)=>new THREE.Vector3(x,y,z);
+const UP=V(0,1,0);
+const PR=2; // 像素比固定 2，不做自动降级
+const MSAA=0; // 2 倍像素比已是超采样；独显可改 4 再叠一层 MSAA
+
+/* ───────── 渲染器 / 后期 ───────── */
+const canvas=document.getElementById('gl');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:false,powerPreference:'high-performance'});
+renderer.setPixelRatio(PR);
+renderer.setSize(innerWidth,innerHeight,false);
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.12;
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFShadowMap;
+renderer.shadowMap.autoUpdate=false; // 场景近乎静态：阴影图每 0.25s 刷新一次即可
+
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x000000);
+
+const camera=new THREE.PerspectiveCamera(32,innerWidth/innerHeight,0.08,3000);
+
+const rt=new THREE.WebGLRenderTarget(innerWidth,innerHeight,{type:THREE.HalfFloatType,samples:MSAA});
+const composer=new EffectComposer(renderer,rt);
+composer.setPixelRatio(PR);
+composer.setSize(innerWidth,innerHeight);
+composer.addPass(new RenderPass(scene,camera));
+// 阈值设在 HDR 2.2：只有被刻意推亮的小灯点才会进 bloom，受光的白色舱体不会
+const bloom=new UnrealBloomPass(new THREE.Vector2(innerWidth,innerHeight),0.5,0.22,2.2);
+composer.addPass(bloom);
+const bloomSize=()=>bloom.setSize(innerWidth*PR/2,innerHeight*PR/2); // 辉光本身是模糊的，半分辨率缓冲即可
+bloomSize();
+composer.addPass(new OutputPass());
+
+/* ───────── 工具 ───────── */
+let _s=20261110;
+const rnd=()=>{_s=_s+0x6D2B79F5|0;let t=Math.imul(_s^_s>>>15,1|_s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+const rr=(a,b)=>a+rnd()*(b-a);
+const h2=(x,y)=>{const s=Math.sin(x*127.1+y*311.7)*43758.5453;return s-Math.floor(s)};
+const vn=(x,y)=>{const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+  return (h2(xi,yi)*(1-u)+h2(xi+1,yi)*u)*(1-v)+(h2(xi,yi+1)*(1-u)+h2(xi+1,yi+1)*u)*v};
+const fbm=(x,y)=>vn(x,y)*.5+vn(x*2.1,y*2.1)*.3+vn(x*4.3,y*4.3)*.2;
+const sstep=(a,b,x)=>{x=Math.min(1,Math.max(0,(x-a)/(b-a)));return x*x*(3-2*x)};
+
+function canvasTex(w,h,draw,repeat){const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');draw(g,w,h);
+  const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;t.anisotropy=8;
+  if(repeat){t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(repeat[0],repeat[1])}return t}
+const M=(color,o={})=>new THREE.MeshStandardMaterial({color,roughness:.7,metalness:0,...o});
+const LM=(color,o={})=>new THREE.MeshLambertMaterial({color,...o}); // 哑光大面积材质用 Lambert，省片元
+function add(p,geo,mat,x=0,y=0,z=0){const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);p.add(m);return m}
+const box=(p,w,h,d,mat,x,y,z)=>add(p,new THREE.BoxGeometry(w,h,d),mat,x,y,z);
+const rbox=(p,w,h,d,r,mat,x,y,z)=>add(p,new RoundedBoxGeometry(w,h,d,3,r),mat,x,y,z);
+const cyl=(p,rt,rb,h,mat,x,y,z,seg=24,open=false)=>add(p,new THREE.CylinderGeometry(rt,rb,h,seg,1,open),mat,x,y,z);
+const sph=(p,r,mat,x,y,z,ws=20,hs=14)=>add(p,new THREE.SphereGeometry(r,ws,hs),mat,x,y,z);
+const grp=(p,x=0,y=0,z=0,ry=0)=>{const g=new THREE.Group();g.position.set(x,y,z);g.rotation.y=ry;p.add(g);return g};
+function strut(p,a,b,r,mat,seg=8){const d=new THREE.Vector3().subVectors(b,a);const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,d.length(),seg),mat);
+  m.position.copy(a).addScaledVector(d,.5);m.quaternion.setFromUnitVectors(UP,d.clone().normalize());p.add(m);return m}
+function tube(p,pts,r,mat){return add(p,new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),pts.length*8,r,8),mat)}
+// 小灯点：MeshBasic 把颜色推到 HDR，交给 bloom
+const lampGeo=new THREE.SphereGeometry(1,10,8), lampMats={};
+const lampMat=(color,k)=>lampMats[color+'_'+k]||(lampMats[color+'_'+k]=new THREE.MeshBasicMaterial({color:new THREE.Color(color).multiplyScalar(k)}));
+function lamp(p,x,y,z,color=0xbfe0ff,k=6,r=.06){const m=add(p,lampGeo,lampMat(color,k),x,y,z);m.scale.setScalar(r);return m}
+const blinkers=[];
+function blink(p,x,y,z,color=0xff2414,period=1.6,phase=0,r=.1,duty=.35){const mat=new THREE.MeshBasicMaterial();const m=add(p,lampGeo,mat,x,y,z);m.scale.setScalar(r);
+  blinkers.push({mat,base:new THREE.Color(color),period,phase,duty});return m}
+
+/* ───────── 贴图 ───────── */
+const regTex=canvasTex(512,512,(g,w,h)=>{g.fillStyle='#9c9c9c';g.fillRect(0,0,w,h);
+  for(let i=0;i<22000;i++){const v=rnd();g.fillStyle=v>.5?`rgba(255,255,255,${rr(.03,.16)})`:`rgba(0,0,0,${rr(.04,.22)})`;const s=rr(.6,2.4);g.fillRect(rnd()*w,rnd()*h,s,s)}
+  for(let i=0;i<70;i++){const x=rnd()*w,y=rnd()*h,r=rr(2,9);g.fillStyle='rgba(0,0,0,.2)';g.beginPath();g.arc(x,y,r,0,TAU);g.fill();
+    g.strokeStyle='rgba(255,255,255,.2)';g.lineWidth=1;g.beginPath();g.arc(x-.6,y-.6,r,0,TAU);g.stroke()}},[5,5]);
+const strataTex=canvasTex(1024,256,(g,w,h)=>{
+  const bands=[[0,'#8d8f94'],[.07,'#73757a'],[.17,'#5f5c5d'],[.26,'#4c4d52'],[.4,'#6b6660'],[.47,'#414248'],[.63,'#57534f'],[.72,'#303136'],[.9,'#25262a']];
+  bands.forEach(([f,c],i)=>{g.fillStyle=c;g.beginPath();g.moveTo(0,h);for(let x=0;x<=w;x+=8){g.lineTo(x,f*h+(i?Math.sin(x*.011+i*1.7)*5+Math.sin(x*.043+i*.6)*2.5:0))}g.lineTo(w,h);g.closePath();g.fill()});
+  for(let i=0;i<26000;i++){g.fillStyle=rnd()>.5?`rgba(255,255,255,${rr(.02,.1)})`:`rgba(0,0,0,${rr(.04,.18)})`;g.fillRect(rnd()*w,rnd()*h,rr(1,3),rr(.6,1.6))}
+  for(let i=0;i<90;i++){const x=rnd()*w,y=rr(.2,1)*h,r=rr(2,8);g.fillStyle=rnd()>.5?'rgba(150,150,155,.35)':'rgba(20,20,24,.4)';g.beginPath();g.ellipse(x,y,r*rr(1,1.8),r,rr(0,3),0,TAU);g.fill()}
+  const gr=g.createLinearGradient(0,0,0,h);gr.addColorStop(0,'rgba(255,255,255,.1)');gr.addColorStop(.1,'rgba(0,0,0,0)');gr.addColorStop(1,'rgba(0,0,0,.35)');g.fillStyle=gr;g.fillRect(0,0,w,h)});
+function padTex(txt){return canvasTex(512,512,(g)=>{g.fillStyle='#3b3d42';g.fillRect(0,0,512,512);
+  for(let i=0;i<5000;i++){g.fillStyle=`rgba(${rnd()>.5?255:0},${rnd()>.5?255:0},${rnd()>.5?255:0},.05)`;g.fillRect(rnd()*512,rnd()*512,2,2)}
+  g.strokeStyle='#d6dae0';g.lineWidth=9;g.beginPath();g.arc(256,256,222,0,TAU);g.stroke();
+  g.lineWidth=4;g.beginPath();g.arc(256,256,128,0,TAU);g.stroke();
+  for(let i=0;i<24;i++){const a=i/24*TAU;g.beginPath();g.moveTo(256+Math.cos(a)*190,256+Math.sin(a)*190);g.lineTo(256+Math.cos(a)*208,256+Math.sin(a)*208);g.stroke()}
+  g.strokeStyle='#ff6a14';g.lineWidth=9;for(const a of[0,PI/2,PI,PI*1.5]){g.beginPath();g.arc(256,256,168,a-.22,a+.22);g.stroke()}
+  g.fillStyle='#d6dae0';g.font='bold 54px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText(txt,256,256+166)})}
+const solarTex=canvasTex(256,128,(g,w,h)=>{g.fillStyle='#0d1b36';g.fillRect(0,0,w,h);g.strokeStyle='rgba(140,180,255,.5)';g.lineWidth=1.5;
+  for(let x=0;x<=w;x+=32){g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke()}for(let y=0;y<=h;y+=32){g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke()}});
+const floorTex=canvasTex(512,512,(g)=>{g.fillStyle='#d9cbb6';g.fillRect(0,0,512,512);g.strokeStyle='rgba(90,70,50,.22)';g.lineWidth=2;
+  for(let r=40;r<256;r+=36){g.beginPath();g.arc(256,256,r,0,TAU);g.stroke()}
+  for(let i=0;i<24;i++){const a=i/24*TAU;g.beginPath();g.moveTo(256+Math.cos(a)*76,256+Math.sin(a)*76);g.lineTo(256+Math.cos(a)*256,256+Math.sin(a)*256);g.stroke()}
+  for(let i=0;i<5000;i++){g.fillStyle=`rgba(60,40,20,${rr(.02,.06)})`;g.fillRect(rnd()*512,rnd()*512,2,2)}});
+
+/* ───────── 材质 ───────── */
+const mat={
+  hull:M(0xeceef1,{roughness:.5}), hull2:M(0xbcc1c9,{roughness:.6}), panel:M(0x8a9098,{roughness:.6,metalness:.2}),
+  dark:M(0x2a2e35,{roughness:.6,metalness:.15}), black:M(0x101114,{roughness:.85}), steel:M(0x9aa1aa,{roughness:.4,metalness:.25}),
+  orange:M(0xff6a14,{roughness:.5}), yellow:M(0xf0b20a,{roughness:.55}),
+  gold:M(0xdaa63f,{roughness:.34,metalness:.35,flatShading:true,emissive:0x4a3008,emissiveIntensity:.5}),
+  glass:new THREE.MeshBasicMaterial({color:0xa9c8ff,transparent:true,opacity:.1,side:THREE.DoubleSide,depthWrite:false,forceSinglePass:true}),
+  domeGlass:new THREE.MeshBasicMaterial({color:0xffb878,transparent:true,opacity:.022,side:THREE.DoubleSide,depthWrite:false,forceSinglePass:true}),
+  warmWin:M(0x332211,{emissive:0xffb869,emissiveIntensity:1.5,roughness:.3}),
+  warmStrip:new THREE.MeshBasicMaterial({color:new THREE.Color(0xffd6a0).multiplyScalar(1.7)}),
+  frame:M(0xdfe2e6,{roughness:.45}), concrete:LM(0x7d8086), path:LM(0x35373c),
+  print:LM(0xa9a8a4), print2:LM(0x94938f),
+  rock:LM(0x6c6e73,{flatShading:true}),
+  reg:LM(0xb4b7be,{map:regTex,bumpMap:regTex,bumpScale:.9,vertexColors:true}),
+  regDS:LM(0xa8abb2,{map:regTex,bumpMap:regTex,bumpScale:.9,side:THREE.DoubleSide}),
+  solar:M(0xffffff,{map:solarTex,roughness:.3,metalness:.2}),
+  suit:M(0xf2f2ee,{roughness:.75,emissive:0xffe2c0,emissiveIntensity:.1}), visor:M(0x8a6218,{roughness:.15,metalness:.35,emissive:0x5a3a08,emissiveIntensity:.5}),
+  canopy:M(0x0b1522,{roughness:.1,metalness:.3}),
+  liner:LM(0xf3e6d2,{side:THREE.BackSide,emissive:0xffc890,emissiveIntensity:.1}),
+  floorIn:M(0xffffff,{map:floorTex,roughness:.55}), rug:LM(0x33424d), rug2:LM(0x7a6452),
+  desk:M(0x3a3f47,{roughness:.4,metalness:.3}), sofa:LM(0x8d8278), cream:LM(0xe8dcc8),
+  leaf:[LM(0x3f9b4b,{flatShading:true,emissive:0x1a4a20,emissiveIntensity:.35}),LM(0x62c05c,{flatShading:true,emissive:0x1f5a22,emissiveIntensity:.35}),LM(0x2f7a3e,{flatShading:true,emissive:0x143a1c,emissiveIntensity:.35})],
+  soil:LM(0x3a2a20),
+  letter:M(0xf1f3f6,{roughness:.4,metalness:.15,emissive:0xffffff,emissiveIntensity:.05}),
+};
+function porthole(p,pos,lookTo,r=.36){const d=add(p,new THREE.CircleGeometry(r,24),mat.warmWin);d.position.copy(pos);d.lookAt(lookTo);
+  const t=add(p,new THREE.TorusGeometry(r+.03,.06,8,24),mat.frame);t.position.copy(pos);t.lookAt(lookTo);return d}
+
+/* ───────── 星空（不闪烁） ───────── */
+{const n=3200,pos=new Float32Array(n*3),col=new Float32Array(n*3);
+  for(let i=0;i<n;i++){const u=rnd()*2-1,a=rnd()*TAU,s=Math.sqrt(1-u*u);pos.set([Math.cos(a)*s*1500,u*1500,Math.sin(a)*s*1500],i*3);
+    const b=Math.pow(rnd(),3)*.85+.12,tint=rnd();col.set([b*(tint>.8?1:.86),b*.9,b*(tint<.25?1:.88)],i*3)}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(pos,3));g.setAttribute('color',new THREE.BufferAttribute(col,3));
+  scene.add(new THREE.Points(g,new THREE.PointsMaterial({size:1.25,sizeAttenuation:false,vertexColors:true,depthWrite:false})))}
+
+/* ───────── 底座与月壤 ───────── */
+{const side=M(0xffffff,{map:strataTex,bumpMap:strataTex,bumpScale:1.2,roughness:.95});
+  const b=box(scene,40,5,40,[side,side,mat.black,mat.black,side,side],0,-2.52,0);b.userData.recv=true;
+  box(scene,41,.5,41,M(0x15171b,{roughness:.5,metalness:.2}),0,-5.27,0);
+  box(scene,40.3,.08,40.3,M(0x4a4d53,{roughness:.6,metalness:.2}),0,-5.0,0);
+  const gg=new THREE.PlaneGeometry(40,40,170,170);gg.rotateX(-PI/2);
+  const craters=[[-17.6,-9.2,1.5],[18,-18.2,1.2],[5.8,18.3,.9],[-18,18.2,1.0],[18.4,8,.8],[-5.5,-18.3,1.1],[7.2,-18.4,.8]];
+  const p=gg.attributes.position,c=new Float32Array(p.count*3);
+  for(let i=0;i<p.count;i++){const x=p.getX(i),z=p.getZ(i);const f=sstep(0,1.6,Math.min(20-Math.abs(x),20-Math.abs(z)));
+    let y=(fbm(x*.4+9,z*.4+3)-.5)*.09*f, shade=.8+(fbm(x*.22+2,z*.22+7)-.5)*.5;
+    for(const[cx,cz,r]of craters){const d=Math.hypot(x-cx,z-cz)/r;if(d<1.6){y+=f*(d<1?-.2*r*(1-d*d):0)+f*.07*r*Math.exp(-Math.pow((d-1)/.2,2));if(d<1)shade*=.75+.25*d}}
+    p.setY(i,y);c.set([shade,shade,shade*1.02],i*3)}
+  gg.setAttribute('color',new THREE.BufferAttribute(c,3));gg.computeVertexNormals();
+  add(scene,gg,mat.reg)}
+// 立体字
+new FontLoader().load(window.__CDN+'/examples/fonts/helvetiker_bold.typeface.json',font=>{
+  const g=new TextGeometry('SELENE // SITE 07',{font,size:1.9,depth:.45,curveSegments:8,bevelEnabled:true,bevelThickness:.04,bevelSize:.03,bevelSegments:2});
+  g.computeBoundingBox();const bb=g.boundingBox,w=bb.max.x-bb.min.x;g.translate(-(bb.max.x+bb.min.x)/2,-(bb.max.y+bb.min.y)/2,0);
+  const m=new THREE.Mesh(g,mat.letter);const s=Math.min(1,28/w);m.scale.set(s,s,1);m.position.set(0,-2.5,20);m.castShadow=m.receiveShadow=true;scene.add(m);renderer.shadowMap.needsUpdate=true;
+  const u=box(scene,3,.14,.2,mat.orange,-w*s/2+1.5,-4.05,20.06);u.castShadow=true});
+
+/* ───────── 灯光 ───────── */
+scene.add(new THREE.HemisphereLight(0x9bb2ff,0x101016,.85));
+const key=new THREE.DirectionalLight(0xc6d6ff,2.5);key.position.set(-24,34,26);key.castShadow=true;
+key.shadow.mapSize.set(4096,4096);Object.assign(key.shadow.camera,{left:-32,right:32,top:32,bottom:-32,near:5,far:120});key.shadow.bias=-.0004;key.shadow.normalBias=.04;scene.add(key);
+
+function mast(x,z,h,tx,ty,tz,shadow,inten=320,ang=.5){const g=grp(scene,x,0,z);box(g,.6,.22,.6,mat.dark,0,.11,0);cyl(g,.06,.09,h,mat.steel,0,h/2+.2,0,10);
+  for(let i=0;i<3;i++){const a=i/3*TAU+.5;strut(g,V(Math.cos(a)*.9,0,Math.sin(a)*.9),V(0,1.5,0),.03,mat.steel)}
+  const head=grp(g,0,h+.25,0,Math.atan2(tx-x,tz-z));box(head,1.15,.1,.12,mat.dark,0,0,0);
+  for(const sx of[-.34,.34]){const hb=box(head,.5,.32,.18,mat.dark,sx,-.06,.1);hb.rotation.x=.75;const l=add(head,new THREE.BoxGeometry(.4,.22,.03),lampMat(0xcfe2ff,8),sx,-.13,.19);l.rotation.x=.75}
+  if(inten)spot(V(x,h+.2,z),V(tx,ty,tz),inten,ang,shadow);return g}
+function spot(from,to,inten,ang,shadow){const s=new THREE.SpotLight(0xa6c5ff,inten,30,ang,.8,2);
+  s.position.copy(from).addScaledVector(to.clone().sub(from).normalize(),.7);s.target.position.copy(to);scene.add(s,s.target);
+  if(shadow){s.castShadow=true;s.shadow.mapSize.set(1024,1024);s.shadow.bias=-.0006;s.shadow.camera.near=.5;s.shadow.camera.far=30}}
+
+/* ───────── 穹顶开发中心 ───────── */
+const dome=grp(scene), R=7, GA=rad(58);
+{add(dome,new THREE.SphereGeometry(R,72,18,0,TAU,0,GA),mat.domeGlass);
+  add(dome,new THREE.SphereGeometry(R,72,8,0,TAU,GA,PI/2-GA),mat.hull);
+  add(dome,new THREE.SphereGeometry(R-.22,72,8,0,TAU,GA,PI/2-GA),mat.liner);
+  for(let i=0;i<16;i++){const g=new THREE.TorusGeometry(R+.02,.055,6,20,GA);g.rotateZ(PI/2-GA);add(dome,g,mat.frame).rotation.y=i/16*TAU;
+    const s=new THREE.TorusGeometry(R+.012,.028,4,8,PI/2-GA);add(dome,s,mat.panel).rotation.y=(i+.5)/16*TAU}
+  for(const d of[20,39]){const g=new THREE.TorusGeometry(R*Math.sin(rad(d))+.02,.05,6,72);g.rotateX(PI/2);add(dome,g,mat.frame,0,R*Math.cos(rad(d)),0)}
+  {const g=new THREE.TorusGeometry(R*Math.sin(GA)+.03,.15,8,72);g.rotateX(PI/2);add(dome,g,mat.hull2,0,R*Math.cos(GA),0)}
+  {const g=new THREE.TorusGeometry(R*Math.sin(rad(76))+.03,.035,6,72);g.rotateX(PI/2);add(dome,g,mat.panel,0,R*Math.cos(rad(76)),0)}
+  cyl(dome,.75,.85,.25,mat.hull2,0,R+.05,0,24);cyl(dome,.03,.03,1.1,mat.steel,0,R+.7,0,6);blink(dome,0,R+1.3,0,0xff2414,2.0,.3,.09);
+  for(const a of[.85,1.3,1.75,2.2,2.65,3.14,3.6,4.05,5.4]){const dir=V(Math.sin(a)*Math.sin(rad(69)),Math.cos(rad(69)),Math.cos(a)*Math.sin(rad(69)));
+    porthole(dome,dir.clone().multiplyScalar(R+.03),dir.clone().multiplyScalar(20),.34)}
+  const berm=(a0,a1)=>{const pts=[[8.9,-.03],[8.5,.25],[7.9,.85],[7.35,1.4],[6.95,1.72],[6.6,1.78]].map(q=>new THREE.Vector2(q[0],q[1]));
+    const g=new THREE.LatheGeometry(pts,Math.round((a1-a0)*16),a0,a1-a0),p=g.attributes.position;
+    for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i);if(y>.1&&y<1.75){const n=fbm(x*.9+5,z*.9+2)-.5,k=1+n*.07;p.setXYZ(i,x*k,y+n*.3,z*k)}}
+    g.computeVertexNormals();add(dome,g,mat.regDS)};
+  berm(.3,1.5*PI-.14);berm(1.5*PI+.14,TAU-.3)}
+
+/* ───────── 前厅舱 + 气闸 ───────── */
+const foy=grp(scene);
+{rbox(foy,6,3.1,3.3,.25,mat.hull,0,1.55,7);                       // 连接颈（不透明）
+  box(foy,6.06,.55,3.1,mat.hull2,0,.3,7);box(foy,6.05,.07,3.32,mat.orange,0,2.62,7);
+  for(const sx of[-1,1]){box(foy,.04,1.6,2.2,mat.hull2,sx*3.01,1.55,7);
+    const t=cyl(foy,.42,.42,2.3,mat.hull2,sx*3.5,.62,7.1,18);t.rotation.x=PI/2;for(const dz of[-.7,.7]){const b=cyl(foy,.44,.44,.1,mat.dark,sx*3.5,.62,7.1+dz,18);b.rotation.x=PI/2}box(foy,.6,.2,2,mat.dark,sx*3.5,.1,7.1)}
+  box(foy,1.4,.4,1.1,mat.hull2,-1.6,3.3,6.8);box(foy,.9,.28,.9,mat.dark,1.5,3.24,7.2);cyl(foy,.28,.28,.12,mat.panel,1.5,3.44,7.2,16);
+  rbox(foy,6.3,.5,3.1,.08,mat.hull2,0,.25,10.15);box(foy,6.0,.03,2.8,M(0xc9b79e,{roughness:.6}),0,.515,10.15);  // 大厅地台
+  rbox(foy,6.5,.4,3.4,.14,mat.hull,0,3.3,10.2);box(foy,6.52,.06,3.42,mat.dark,0,3.08,10.2);
+  for(const sx of[-1,1]){box(foy,.22,2.6,.22,mat.hull,sx*3.02,1.8,11.58);
+    box(foy,1.66,2.56,.05,mat.glass,sx*2.09,1.8,11.6);box(foy,.05,2.56,2.85,mat.glass,sx*3.05,1.8,10.12);   // 整面落地窗
+    box(foy,.06,2.56,.08,mat.dark,sx*2.09,1.8,11.62);box(foy,1.7,.06,.08,mat.dark,sx*2.09,.54,11.62);
+    box(foy,.34,2.75,.62,mat.hull,sx*1.2,1.88,11.86);                                                       // 气闸门框
+    box(foy,.98,2.2,.1,mat.hull2,sx*.5,1.62,12.0);box(foy,.9,.5,.02,mat.panel,sx*.5,.95,12.06);box(foy,.06,.5,.06,mat.dark,sx*.12,1.5,12.07);
+    porthole(foy,V(sx*.5,2.05,12.06),V(sx*.5,2.05,30),.23);
+    box(foy,.98,2.2,.08,mat.hull2,sx*.5,1.62,8.8);porthole(foy,V(sx*.5,2.05,8.85),V(sx*.5,2.05,30),.21)}             // 内道门
+  box(foy,2.74,.36,.62,mat.hull,0,2.9,11.86);box(foy,2.0,.09,.02,mat.orange,0,2.9,12.18);box(foy,.03,2.2,.03,mat.dark,0,1.62,12.06);
+  lamp(foy,0,3.02,12.18,0x7dffb0,5,.045);rbox(foy,2.3,2.55,.2,.06,mat.dark,0,1.78,8.7);
+  box(foy,4.4,.04,.22,mat.warmStrip,0,3.05,10.2);                                                            // 顶灯带
+  rbox(foy,1.5,.36,.5,.08,mat.sofa,-2.05,.7,9.25);box(foy,.9,.45,.45,mat.cream,2.25,.74,9.2);
+  for(let i=0;i<5;i++)add(foy,new THREE.IcosahedronGeometry(rr(.14,.24),0),mat.leaf[i%3],2.25+rr(-.25,.25),1.1+rr(0,.3),9.2+rr(-.12,.12));
+  box(foy,3.6,.5,.82,mat.concrete,0,.25,12.1);box(foy,3.6,.34,.44,mat.concrete,0,.17,12.72);box(foy,3.6,.17,.44,mat.concrete,0,.085,13.15);   // 台阶
+  for(const sx of[-1,1]){strut(foy,V(sx*1.74,.5,11.9),V(sx*1.74,1.45,11.9),.03,mat.steel);strut(foy,V(sx*1.74,.1,13.3),V(sx*1.74,1.0,13.3),.03,mat.steel);
+    strut(foy,V(sx*1.74,1.45,11.9),V(sx*1.74,1.0,13.3),.03,mat.steel);lamp(foy,sx*1.5,.2,13.38,0xbfe0ff,4,.04);lamp(foy,sx*1.5,.53,12.52,0xbfe0ff,4,.04)}
+  const pl=new THREE.PointLight(0xffc48a,18,7.5,2);pl.position.set(0,2.5,10.3);scene.add(pl)}
+
+/* ───────── 左：圆柱舱 / 宇航服通廊 ───────── */
+const hab=grp(scene,-14.6,0,0);
+{cyl(hab,1.9,1.9,6.6,mat.hull,0,2.25,0,40).rotation.x=PI/2;
+  for(const s of[-1,1]){sph(hab,1.9,mat.hull,0,2.25,s*3.3,32,16).scale.z=.42;cyl(hab,1.94,1.94,.5,mat.orange,0,2.25,s*2.15,40).rotation.x=PI/2;   // 橙色环带
+    cyl(hab,1.915,1.915,.06,mat.panel,0,2.25,s*.9,40).rotation.x=PI/2;
+    porthole(hab,V(1.9,2.6,s*1.25),V(30,2.6,s*1.25),.3);
+    const rp=box(hab,2.3,.05,1.1,mat.solar,s*1.75,4.0,-1.1);rp.rotation.z=-s*.55}
+  porthole(hab,V(0,2.25,4.09),V(0,2.25,30),.62);
+  for(const z of[-2.4,0,2.4]){box(hab,3.1,.75,.45,mat.dark,0,.37,z);box(hab,3.5,.1,.7,mat.steel,0,.05,z)}
+  cyl(hab,.5,.55,.22,mat.hull2,0,4.2,.6,20);cyl(hab,.025,.025,1.5,mat.steel,.3,5,-2.2,6);blink(hab,.3,5.8,-2.2,0xff2414,1.6,.9,.07);
+  for(const z of[-2.3,-1]){cyl(hab,.55,.55,2.1,mat.hull2,-2.7,1.3,z,18);sph(hab,.55,mat.hull2,-2.7,2.35,z,18,10);cyl(hab,.57,.57,.12,mat.dark,-2.7,.9,z,18)}
+  strut(hab,V(-2.2,2.6,-1.65),V(-1.7,3.2,-1.65),.05,mat.steel)}
+const cor=grp(scene), suitAnchor=grp(cor,-10.86,3.05,0);
+{rbox(cor,2.5,2.8,2.6,.2,mat.hull,-7.75,1.4,0);box(cor,2.52,.07,2.62,mat.panel,-7.75,2.3,0);
+  const x0=-12.72,L=3.72,cx=x0+L/2;
+  box(cor,L,.22,2.1,mat.hull2,cx,.4,0);box(cor,L,.2,2.2,mat.hull,cx,2.8,0);box(cor,L-.2,.03,1.9,M(0xc9b79e,{roughness:.6}),cx,.52,0);
+  for(let i=0;i<4;i++){const x=x0+.06+i*(L-.12)/3;for(const sz of[-1,1]){box(cor,.1,2.2,.1,mat.frame,x,1.6,sz*1.02);if(i%3===0)cyl(cor,.07,.07,.3,mat.dark,x+(i?-.2:.2),.15,sz*.8,8)}}
+  for(const sz of[-1,1]){box(cor,L,2.2,.04,mat.glass,cx,1.6,sz*1.0);box(cor,L,.06,.06,mat.frame,cx,1.2,sz*1.02)}
+  box(cor,L-.5,.04,.14,mat.warmStrip,cx,2.68,.45);strut(cor,V(x0+.2,2.52,-.45),V(x0+L-.2,2.52,-.45),.025,mat.steel);
+  const suit=(x)=>{const g=grp(cor,x,.52,-.45),w=mat.suit;
+    rbox(g,.52,.62,.32,.1,w,0,1.2,0);box(g,.4,.5,.18,mat.hull2,0,1.25,-.22);sph(g,.21,w,0,1.72,0,16,12);sph(g,.165,mat.visor,0,1.73,.085,16,12);
+    box(g,.2,.14,.03,mat.dark,0,1.3,.165);cyl(g,.09,.09,.06,mat.orange,.34,1.3,0,10);
+    for(const s of[-1,1]){cyl(g,.085,.075,.6,w,s*.34,1.15,0,10);sph(g,.085,mat.dark,s*.34,.82,0,8,6);cyl(g,.11,.1,.72,w,s*.14,.5,0,10);box(g,.17,.12,.3,mat.dark,s*.14,.1,.04)}
+    strut(g,V(0,1.9,0),V(0,2.0,0),.015,mat.steel)};
+  for(const dx of[-1.2,0,1.2])suit(cx+dx)}
+
+/* ───────── 左前：着陆垫 + 金箔着陆器 ───────── */
+const padG=grp(scene,-12.5,0,12.2);
+{const top=M(0xffffff,{map:padTex('LP-1'),roughness:.9});cyl(padG,4.0,4.1,.16,[mat.concrete,top,mat.concrete],0,.08,0,48);
+  for(let i=0;i<12;i++){const a=i/12*TAU;lamp(padG,Math.cos(a)*3.82,.2,Math.sin(a)*3.82,i%3?0x9fd0ff:0xffffff,4.5,.045)}
+  const L=grp(padG,0,.16,0,.4);
+  cyl(L,1.25,1.4,1.1,mat.gold,0,1.55,0,8);cyl(L,1.42,1.42,.08,mat.dark,0,1.0,0,8);cyl(L,1.27,1.27,.06,mat.dark,0,2.1,0,8);
+  cyl(L,.82,1.0,.95,mat.hull2,0,2.6,0,8);cyl(L,.5,.5,.18,mat.dark,0,3.15,0,16);box(L,.5,.3,.05,mat.canopy,0,2.7,.93);
+  cyl(L,.26,.58,.75,mat.dark,0,.62,0,20,true).material=M(0x2a2e35,{roughness:.5,metalness:.15,side:THREE.DoubleSide});
+  for(let i=0;i<4;i++){const a=i/4*TAU+PI/4,c=Math.cos(a),s=Math.sin(a);
+    strut(L,V(c*1.3,1.25,s*1.3),V(c*2.55,.1,s*2.55),.06,mat.gold);strut(L,V(c*1.2,2.0,s*1.2),V(c*2.0,.62,s*2.0),.035,mat.steel);
+    strut(L,V(Math.cos(a+.5)*1.35,1.1,Math.sin(a+.5)*1.35),V(c*2.1,.5,s*2.1),.03,mat.steel);strut(L,V(Math.cos(a-.5)*1.35,1.1,Math.sin(a-.5)*1.35),V(c*2.1,.5,s*2.1),.03,mat.steel);
+    cyl(L,.34,.34,.07,mat.gold,c*2.55,.05,s*2.55,14);sph(L,.34,mat.gold,Math.cos(a+PI/4)*1.05,1.55,Math.sin(a+PI/4)*1.05,8,6);
+    box(L,.16,.16,.16,mat.dark,c*.95,2.75,s*.95)}
+  strut(L,V(.4,3.2,-.3),V(.9,4.0,-.5),.025,mat.steel);const d=cyl(L,.42,.05,.16,mat.hull,.9,4.05,-.5,20);d.rotation.set(.5,0,-.4);
+  cyl(L,.012,.012,1,mat.steel,-.4,3.7,.2,5);lamp(L,-.4,4.22,.2,0xffffff,5,.035)}
+// 垫旁货物
+{const g=grp(scene,-15.6,0,5.6,.2);rbox(g,1.6,1.1,1.1,.06,mat.hull,0,.55,0);rbox(g,1.2,.8,1.0,.06,mat.hull2,1.6,.4,.15);rbox(g,1.1,.7,.9,.06,mat.panel,.2,1.45,0);
+  box(g,1.62,.1,1.12,mat.orange,0,.85,0);cyl(g,.4,.4,1.2,mat.hull2,-1.4,.6,.2,16);cyl(g,.4,.4,1.2,mat.dark,-1.4,.6,-.75,16)}
+
+/* ───────── 后方：龙门吊 / 天线 / 光伏 ───────── */
+const crane=grp(scene,0,0,-14), trolley=grp(crane,0,10.4,0), craneAnchor=grp(trolley,0,.6,0);
+{const Y=mat.yellow;
+  for(const sx of[-9.5,9.5]){for(const sz of[-1.7,1.7]){box(crane,.5,9.1,.5,Y,sx,4.95,sz);box(crane,.9,.42,1.3,mat.dark,sx,.29,sz);
+      for(const dz of[-.35,.35])cyl(crane,.16,.16,.3,mat.steel,sx,.16,sz+dz,12).rotation.z=PI/2}
+    box(crane,.5,.5,3.9,Y,sx,9.5,0);box(crane,.36,.36,3.4,Y,sx,1.4,0);
+    strut(crane,V(sx,1.4,-1.7),V(sx,5.4,1.7),.08,Y);strut(crane,V(sx,5.4,1.7),V(sx,9.3,-1.7),.08,Y);box(crane,.3,.3,3.4,Y,sx,5.4,0);
+    box(crane,.22,.1,9.5,mat.steel,sx,.05,0);blink(crane,sx,10.6,0,0xff2414,1.6,sx>0?.8:0,.1);cyl(crane,.03,.03,.5,mat.steel,sx,10.3,0,6)}
+  for(const sz of[-.8,.8])box(crane,19.6,.8,.42,Y,0,9.95,sz);
+  for(let x=-8;x<=8;x+=2)box(crane,.16,.16,1.3,mat.dark,x,9.7,0);
+  box(crane,1.3,1.2,1.2,mat.hull2,8.0,8.75,1.35);box(crane,1.0,.55,.03,mat.warmWin,8.0,8.9,1.97);
+  for(let i=0;i<9;i++)box(crane,.5,.03,.05,mat.steel,-9.5,1+i*.9,-2.0);  // 爬梯
+  box(trolley,1.7,.45,2.1,mat.dark,0,0,0);box(trolley,1.0,.4,1.0,Y,0,.35,0);
+  for(const sz of[-.3,.3])cyl(trolley,.025,.025,4.3,mat.black,0,-2.3,sz,6);
+  box(trolley,.5,.4,.9,Y,0,-4.6,0);
+  for(const sx of[-1,1])for(const sz of[-1,1])strut(trolley,V(0,-4.8,sz*.3),V(sx*1.2,-5.55,sz*.6),.02,mat.black);
+  rbox(trolley,2.8,1.2,1.5,.08,mat.hull,0,-6.15,0);box(trolley,2.82,.1,1.52,mat.panel,0,-5.9,0);box(trolley,.5,1.22,1.52,mat.hull2,-.8,-6.15,0);
+  add(crane,new THREE.BoxGeometry(.6,.04,.3),lampMat(0xcfe2ff,8),-3,9.52,0);add(crane,new THREE.BoxGeometry(.6,.04,.3),lampMat(0xcfe2ff,8),3,9.52,0);
+  // 吊下堆场
+  const st=[[-6,.6,0,mat.hull],[-6,1.8,.1,mat.hull2],[-3.3,.6,.3,mat.panel],[4.2,.6,-.2,mat.hull],[4.3,1.8,-.1,mat.hull],[6.9,.6,.2,mat.hull2],[-3.2,.6,-1.4,mat.hull2]];
+  for(const[x,y,z,m]of st){const c=rbox(crane,2.4,1.2,1.2,.05,m,x,y,z);box(crane,2.42,.08,1.22,mat.dark,x,y+.35,z);box(crane,.08,1.22,1.22,mat.dark,x-.7,y,z);box(crane,.08,1.22,1.22,mat.dark,x+.7,y,z)}
+  box(crane,2.42,.1,1.23,mat.orange,4.2,.6-.3,-.2);
+  for(let i=0;i<4;i++){const p=box(crane,2.2,.12,1.6,mat.print,1.2,.1+i*.16,1.6);p.rotation.y=.06*i}
+  for(const x of[-8,-7.1]){cyl(crane,.42,.42,1.5,mat.hull2,x,.75,-2.9,16);sph(crane,.42,mat.hull2,x,1.5,-2.9,16,8)}}
+// 格构天线塔
+const towerG=grp(scene,-16.6,0,-15.6);
+{const h=11.5,n=8,w0=.95,w1=.28,cs=[[1,1],[-1,1],[-1,-1],[1,-1]];
+  for(let k=0;k<n;k++){const y0=k*h/n,y1=(k+1)*h/n,a=w0+(w1-w0)*k/n,b=w0+(w1-w0)*(k+1)/n;
+    for(let i=0;i<4;i++){const c=cs[i],d=cs[(i+1)%4];strut(towerG,V(c[0]*a,y0,c[1]*a),V(c[0]*b,y1,c[1]*b),.045,mat.steel,6);
+      strut(towerG,V(c[0]*b,y1,c[1]*b),V(d[0]*b,y1,d[1]*b),.03,mat.steel,5);strut(towerG,V(c[0]*a,y0,c[1]*a),V(d[0]*b,y1,d[1]*b),.025,mat.steel,5)}}
+  cyl(towerG,.02,.02,1.6,mat.steel,0,h+.8,0,5);blink(towerG,0,h+.15,0,0xff2414,1.6,.4,.11);blink(towerG,.6,h*.5,.6,0xff2414,1.6,1.2,.07);
+  const d1=cyl(towerG,.55,.55,.28,mat.hull,.75,8.6,.2,20);d1.rotation.z=PI/2;const d2=cyl(towerG,.45,.45,.24,mat.hull,-.1,7.2,.75,20);d2.rotation.x=PI/2;
+  box(towerG,.5,.9,.4,mat.hull2,0,9.9,0);box(towerG,2.4,.3,2.4,mat.concrete,0,.05,0)}
+// 大抛物面
+const dishG=grp(scene,15.4,0,-15.3), dishYaw=grp(dishG,0,2.4,0);
+{cyl(dishG,.9,1.25,1.3,mat.hull2,0,.65,0,20);cyl(dishG,.5,.6,1.1,mat.dark,0,1.85,0,16);box(dishYaw,1.9,.3,.5,mat.hull2,0,.1,0);
+  for(const sx of[-1,1])box(dishYaw,.18,1.2,.5,mat.hull2,sx*.85,.75,0);
+  const tilt=grp(dishYaw,0,1.25,0);tilt.rotation.x=-.75;
+  const pts=[];for(let i=0;i<=12;i++){const r=i/12*2.6;pts.push(new THREE.Vector2(r,r*r/6))}
+  add(tilt,new THREE.LatheGeometry(pts,40),M(0xe6e8ec,{roughness:.55,side:THREE.DoubleSide}));
+  {const g=new THREE.TorusGeometry(2.6,.05,6,40);g.rotateX(PI/2);add(tilt,g,mat.frame,0,2.6*2.6/6,0)}
+  for(let i=0;i<3;i++){const a=i/3*TAU;strut(tilt,V(Math.cos(a)*2.3,.9,Math.sin(a)*2.3),V(0,1.9,0),.03,mat.steel)}
+  cyl(tilt,.16,.22,.35,mat.dark,0,1.95,0,12);cyl(tilt,.3,.3,.4,mat.dark,0,-.2,0,14);
+  blink(dishG,0,.2,1.4,0xff2414,1.6,.6,.07)}
+// 光伏阵列 + 电缆
+{for(const[x,z]of[[-15.6,-9.6],[-11.8,-10.2]]){const g=grp(scene,x,0,z,.25);cyl(g,.08,.1,1.3,mat.steel,0,.65,0,8);box(g,.7,.12,.7,mat.dark,0,.06,0);
+    const p=grp(g,0,1.45,0);p.rotation.x=.55;box(p,3.3,.07,1.9,mat.solar,0,0,0);box(p,3.4,.05,2.0,mat.dark,0,-.05,0)}
+  tube(scene,[V(-15.6,.06,-9.2),V(-13.5,.06,-7.8),V(-10.5,.06,-7.2),V(-8.6,.1,-5)],.06,mat.black);
+  tube(scene,[V(-11.8,.06,-9.8),V(-11.5,.06,-8.4),V(-10.5,.06,-7.3)],.05,mat.black)}
+
+/* ───────── 右：未完工 3D 打印穹顶 / 机械臂 / 传送带 ───────── */
+const pd=grp(scene,13.4,0,-4.5), Rp=4.3;
+{for(let i=0;i<15;i++){const y=.12+i*.24,r=Math.sqrt(Rp*Rp-y*y);let arc=TAU,st=0;
+    if(i>8){arc=TAU*(1-(i-8)*.125);st=arc-2.17-(i-8)*.07}
+    const g=new THREE.TorusGeometry(r,.135,6,Math.max(12,Math.ceil(72*arc/TAU)),arc);g.rotateX(PI/2);const m=add(pd,g,i%2?mat.print:mat.print2,0,y,0);m.rotation.y=st}
+  cyl(pd,4.0,4.0,.05,mat.path,0,.03,0,40);
+  for(const sx of[-1,1])box(pd,.3,2.2,.7,mat.hull2,sx*.85,1.1,4.15);box(pd,2.0,.3,.7,mat.hull2,0,2.3,4.1);box(pd,1.4,2.1,.3,mat.black,0,1.05,4.05);
+  for(let i=0;i<4;i++){const a=i/4*TAU+.4;strut(pd,V(Math.cos(a)*2.1,0,Math.sin(a)*2.1),V(Math.cos(a)*2.1,2.6,Math.sin(a)*2.1),.04,mat.steel);
+    strut(pd,V(Math.cos(a)*2.1,2.6,Math.sin(a)*2.1),V(Math.cos(a+TAU/4)*2.1,2.6,Math.sin(a+TAU/4)*2.1),.03,mat.steel);
+    strut(pd,V(Math.cos(a)*2.1,1.3,Math.sin(a)*2.1),V(Math.cos(a+TAU/4)*2.1,1.3,Math.sin(a+TAU/4)*2.1),.03,mat.steel)}
+  for(let i=0;i<3;i++){const a=i/3*TAU;strut(pd,V(Math.cos(a)*.5-.6,0,Math.sin(a)*.5+.5),V(-.6,1.5,.5),.02,mat.steel)}lamp(pd,-.6,1.58,.5,0xffe2b0,6,.07);
+  rbox(pd,1,.6,.7,.05,mat.hull2,1.2,.3,-.8)}
+const arm=grp(scene,9.7,0,.9,.97), armYaw=grp(arm,0,.85,0);
+let armSh,armEl,nozzleAnchor;
+{const O=mat.orange;box(arm,1.9,.45,1.7,mat.dark,0,.35,0);for(const sz of[-1,1]){box(arm,2.2,.4,.4,mat.black,0,.2,sz*.85);for(const dx of[-.9,0,.9])cyl(arm,.2,.2,.42,mat.steel,dx,.2,sz*.85,12).rotation.x=PI/2}
+  cyl(arm,.62,.7,.3,mat.steel,0,.7,0,24);cyl(armYaw,.5,.55,.5,O,0,.25,0,24);
+  armSh=grp(armYaw,0,.6,0);cyl(armSh,.36,.36,.8,mat.dark,0,0,0,20).rotation.x=PI/2;rbox(armSh,.42,3.2,.42,.08,O,0,1.6,0);box(armSh,.12,2.2,.5,mat.dark,0,1.6,0);
+  armEl=grp(armSh,0,3.2,0);cyl(armEl,.3,.3,.7,mat.dark,0,0,0,20).rotation.x=PI/2;rbox(armEl,.34,3.0,.34,.07,O,0,1.5,0);
+  const wr=grp(armEl,0,3.0,0);cyl(wr,.22,.22,.5,mat.dark,0,0,0,16).rotation.x=PI/2;
+  const nz=grp(wr);nz.userData.nozzle=true;box(nz,.4,.4,.4,mat.hull2,0,.25,0);cyl(nz,.07,.16,.5,mat.dark,0,.7,0,12);lamp(nz,0,.98,0,0xfff0d0,6,.04);
+  nozzleAnchor=grp(nz,0,.2,0);arm.userData={wr,nz};
+  tube(armSh,[V(.26,.3,0),V(.5,1.6,0),V(.26,3.0,0)],.05,mat.black)}
+const lumps=[]; let convL;
+{const A=V(17.4,.75,5.2),B=V(12.35,3.0,3.75),d=B.clone().sub(A);convL=d.length();
+  const g=grp(scene,A.x,A.y,A.z);g.rotation.order='YZX';g.rotation.y=Math.atan2(-d.z,d.x);g.rotation.z=Math.asin(d.y/convL);
+  box(g,convL,.06,.7,mat.black,convL/2,0,0);box(g,convL,.14,.08,mat.hull2,convL/2,-.12,0);
+  for(const sz of[-1,1])box(g,convL,.2,.05,mat.hull2,convL/2,.04,sz*.38);
+  for(const x of[0,convL])cyl(g,.13,.13,.78,mat.steel,x,-.03,0,14).rotation.x=PI/2;
+  for(let x=.6;x<convL;x+=.7)cyl(g,.05,.05,.74,mat.dark,x,-.07,0,8).rotation.x=PI/2;
+  for(let i=0;i<9;i++){const m=add(g,new THREE.IcosahedronGeometry(rr(.1,.17),0),mat.rock,0,.14,rr(-.18,.18));m.rotation.set(rnd()*3,rnd()*3,0);lumps.push({m,o:i/9})}
+  for(const k of[.22,.6,.93]){const P=A.clone().addScaledVector(d,k);for(const s of[-1,1])strut(scene,V(P.x+s*.1,0,P.z+s*.55),V(P.x,P.y-.15,P.z+s*.3),.045,mat.steel)}
+  const hp=cyl(scene,.95,.35,.9,mat.hull2,17.55,1.7,5.25,4);hp.rotation.y=PI/4;for(const[dx,dz]of[[-.6,-.6],[.6,-.6],[-.6,.6],[.6,.6]])strut(scene,V(17.55+dx*1.1,0,5.25+dz*1.1),V(17.55+dx,1.9,5.25+dz),.04,mat.steel);
+  const p1=sph(scene,1.5,mat.regDS,18.0,0,7.1,18,10);p1.scale.set(1,.5,1.1);const p2=sph(scene,1.0,mat.regDS,16.4,0,7.3,14,8);p2.scale.y=.45;
+  // 搅拌料仓
+  cyl(scene,.85,.85,1.5,mat.hull2,11.9,2.0,3.6,24);cyl(scene,.85,.25,.75,mat.hull2,11.9,.9,3.6,24);cyl(scene,.87,.87,.1,mat.orange,11.9,2.4,3.6,24);cyl(scene,.9,.9,.1,mat.dark,11.9,2.8,3.6,24,true).material.side=THREE.DoubleSide;
+  for(let i=0;i<4;i++){const a=i/4*TAU+PI/4;strut(scene,V(11.9+Math.cos(a)*.95,0,3.6+Math.sin(a)*.95),V(11.9+Math.cos(a)*.8,1.6,3.6+Math.sin(a)*.8),.045,mat.steel)}
+  tube(scene,[V(11.9,.5,3.6),V(11.3,.1,2.9),V(10.6,.1,1.8),V(10.1,.3,1.3)],.09,mat.black)}
+
+/* ───────── 右前：三角翼飞船 ───────── */
+const shipPad=grp(scene,12.8,0,13.6);
+{const top=M(0xffffff,{map:padTex('LP-2'),roughness:.9});cyl(shipPad,4.3,4.4,.12,[mat.concrete,top,mat.concrete],0,.06,0,48);
+  for(let i=0;i<12;i++){const a=i/12*TAU+.2;lamp(shipPad,Math.cos(a)*4.12,.16,Math.sin(a)*4.12,i%3?0x9fd0ff:0xffffff,4.5,.045)}
+  const S=grp(shipPad,0,.12,0,-.62);
+  const sh=new THREE.Shape();sh.moveTo(0,3.7);[[.5,2.2],[3.4,-2.2],[3.4,-2.9],[1.2,-2.6],[0,-2.8],[-1.2,-2.6],[-3.4,-2.9],[-3.4,-2.2],[-.5,2.2]].forEach(q=>sh.lineTo(q[0],q[1]));sh.closePath();
+  const wg=new THREE.ExtrudeGeometry(sh,{depth:.2,bevelEnabled:true,bevelThickness:.05,bevelSize:.06,bevelSegments:2});wg.rotateX(PI/2);add(S,wg,mat.hull,0,1.45,0);
+  {const ug=new THREE.ShapeGeometry(sh);ug.rotateX(PI/2);add(S,ug,mat.dark,0,1.19,0)}
+  const fu=cyl(S,.7,.7,4.4,mat.hull,0,1.75,-.4,24);fu.rotation.x=PI/2;fu.scale.z=.85;
+  const no=add(S,new THREE.ConeGeometry(.7,2.3,24),mat.hull,0,1.75,2.95);no.rotation.x=PI/2;no.scale.z=.85;
+  const tl=cyl(S,.7,.52,.5,mat.hull2,0,1.75,-2.85,24);tl.rotation.x=-PI/2;tl.scale.z=.85;
+  const st=cyl(S,.715,.715,.2,mat.orange,0,1.75,.15,24);st.rotation.x=PI/2;st.scale.z=.85;
+  sph(S,.5,mat.canopy,0,2.2,1.55,18,12).scale.set(1,.6,1.7);
+  for(const sx of[-1,1]){const fs=new THREE.Shape();fs.moveTo(0,0);fs.lineTo(1.9,0);fs.lineTo(2.2,1.5);fs.lineTo(1.55,1.5);fs.closePath();
+    const fg=new THREE.ExtrudeGeometry(fs,{depth:.09,bevelEnabled:false});fg.translate(0,0,-.045);fg.rotateY(PI/2);const f=add(S,fg,mat.hull,sx*2.75,1.45,-.9);f.rotation.z=-sx*.28;
+    const n=cyl(S,.3,.4,.6,mat.dark,sx*.38,1.75,-3.3,16);n.rotation.x=PI/2;const gl=add(S,new THREE.CircleGeometry(.27,16),lampMat(0x6aa8ff,1.4),sx*.38,1.75,-3.61);gl.rotation.y=PI;
+    strut(S,V(sx*1.7,1.2,-1.5),V(sx*1.8,.12,-1.6),.06,mat.steel);cyl(S,.2,.2,.06,mat.dark,sx*1.8,.04,-1.6,12);
+    box(S,.05,.06,2.2,mat.dark,sx*1.5,1.47,-.4)}
+  strut(S,V(0,1.3,2.2),V(0,.12,2.4),.05,mat.steel);cyl(S,.18,.18,.06,mat.dark,0,.04,2.4,12);
+  lamp(S,3.4,1.5,-2.5,0xff3020,5,.04);lamp(S,-3.4,1.5,-2.5,0x40ff80,5,.04)}
+
+/* ───────── 前景：月球车 / 充电桩 / 照明杆 / 步道 ───────── */
+const rover=grp(scene,-4.9,0,17.0,.32);
+{rbox(rover,3.1,.42,1.4,.1,mat.hull,0,.82,0);box(rover,3.12,.08,1.42,mat.orange,0,.68,0);
+  rbox(rover,1.45,.95,1.35,.16,mat.hull,.6,1.48,0);box(rover,.03,.5,1.0,mat.canopy,1.335,1.55,0);box(rover,1.0,.45,.03,mat.canopy,.6,1.58,.68);box(rover,1.0,.45,.03,mat.canopy,.6,1.58,-.68);
+  rbox(rover,1.2,.5,1.2,.06,mat.hull2,-.85,1.28,0);box(rover,1.25,.05,1.3,mat.solar,-.85,1.62,0);
+  for(const x of[-1.15,0,1.15])for(const sz of[-1,1]){const w=cyl(rover,.42,.42,.34,mat.black,x,.42,sz*.95,18);w.rotation.x=PI/2;const hb=cyl(rover,.2,.2,.36,mat.steel,x,.42,sz*.95,10);hb.rotation.x=PI/2;
+    strut(rover,V(x,.42,sz*.75),V(x*.6,.8,sz*.6),.05,mat.dark)}
+  cyl(rover,.03,.03,1.1,mat.steel,.1,2.5,-.4,6);box(rover,.3,.16,.2,mat.dark,.1,3.05,-.4);lamp(rover,.26,3.05,-.4,0x9fd8ff,4,.035);
+  const d=cyl(rover,.32,.04,.12,mat.hull,-1.1,2.0,.3,18);d.rotation.set(.5,0,.3);strut(rover,V(-1.1,1.6,.3),V(-1.1,1.95,.3),.02,mat.steel);
+  for(const sz of[-.45,.45])lamp(rover,1.56,.92,sz,0xfff0d8,6,.05)}
+const charger=grp(scene,-7.7,0,18.2);
+{box(charger,.8,.1,.8,mat.dark,0,.05,0);rbox(charger,.4,1.5,.36,.06,mat.hull,0,.85,0);box(charger,.42,.1,.38,mat.orange,0,1.5,0);
+  add(charger,new THREE.PlaneGeometry(.24,.3),lampMat(0x6ad0ff,1.3),0,1.15,.185);blink(charger,.12,.8,.19,0x40ff90,1.2,0,.03,.6);
+  tube(scene,[V(-7.5,.7,18.2),V(-7.0,.08,18.0),V(-6.4,.08,17.3),V(-6.05,.7,16.85)],.035,mat.black);
+  const c2=grp(scene,-8.9,0,18.6);box(c2,.8,.1,.8,mat.dark,0,.05,0);rbox(c2,.4,1.5,.36,.06,mat.hull,0,.85,0);box(c2,.42,.1,.38,mat.orange,0,1.5,0);add(c2,new THREE.PlaneGeometry(.24,.3),lampMat(0x6ad0ff,1.3),0,1.15,.185)}
+mast(-5.3,13.5,6.6,-1.6,0,15.0,false,0);mast(5.3,13.5,6.6,1.9,0,14.6,false,0);
+spot(V(-1.2,7.6,12.6),V(.2,0,15.6),760,.62,true); // 入口两根灯杆合用一盏真实聚光灯（每多一盏灯，全屏片元都要多算一次）
+mast(18.7,.4,7,13.4,1,-3.6,false,620,.55);mast(-18.3,6.4,6.8,-12.6,0,11.8,false,600,.55);
+{box(scene,3.4,.04,5.4,mat.path,0,.02,16.1);box(scene,13.6,.04,2.0,mat.path,1.7,.021,17.3);
+  for(let z=13.9;z<18.9;z+=1.0)for(const sx of[-1,1]){box(scene,.08,.16,.08,mat.dark,sx*1.8,.08,z);lamp(scene,sx*1.8,.19,z,0x9fd8ff,4,.035)}}
+// 零散：箱体 / 石块
+{const crate=(x,z,w,h,d,m,ry=0,y=0)=>{const g=grp(scene,x,y,z,ry);rbox(g,w,h,d,.04,m,0,h/2,0);box(g,w+.02,.06,d+.02,mat.dark,0,h*.7,0);return g};
+  crate(7.2,17.6,1.2,.9,.9,mat.hull,.3);crate(8.3,18.3,.9,.7,.8,mat.hull2,-.2);crate(7.4,17.7,.7,.5,.6,mat.panel,.5,.9);
+  crate(3.9,15.2,.8,.6,.6,mat.hull2,.1);crate(-9.6,6.6,1.3,1,1,mat.hull,.5);crate(-10.4,7.9,.9,.7,.8,mat.panel,-.3);
+  crate(9.4,7.2,1.2,.9,1,mat.hull2,.7);crate(8.4,8.4,.9,.7,.7,mat.hull,.2);crate(18.2,-10.6,1.5,1.1,1.1,mat.hull,.2);crate(16.4,-10.9,1.1,.8,.9,mat.hull2,-.4);
+  for(const x of[11.4,12.6]){cyl(scene,.5,.5,1.6,mat.hull2,x,.8,-10.9,16);sph(scene,.5,mat.hull2,x,1.6,-10.9,16,8)}
+  const keep=[[0,0,9.6],[0,10.5,4.6],[0,15.5,3.6],[-12.5,12.2,4.6],[12.8,13.6,4.9],[13.4,-4.5,5],[-14.6,0,4.4],[-10.5,0,2.6],[0,-14,11],[-16.6,-15.6,2],[15.4,-15.3,3.2],[-13.7,-9.9,4.2],
+    [-4.9,17,2.6],[-8.3,18.4,1.4],[14.6,5,4.6],[9.7,.9,2],[11.9,3.6,1.6],[-15.6,5.6,2.6],[5,17.3,4],[-5.3,13.5,1],[5.3,13.5,1],[18.7,.4,1],[-18.3,6.4,1]];
+  let n=0,guard=0;const rg=new THREE.IcosahedronGeometry(1,0);
+  while(n<70&&guard++<3000){const x=rr(-19.2,19.2),z=rr(-19.2,19.2);if(keep.some(k=>Math.hypot(x-k[0],z-k[1])<k[2]))continue;
+    const s=Math.pow(rnd(),2.2)*.42+.07,m=add(scene,rg,mat.rock,x,s*.35,z);m.scale.set(s*rr(.8,1.4),s*rr(.6,1),s*rr(.8,1.4));m.rotation.set(rnd()*3,rnd()*3,rnd()*3);n++}}
+
+/* ───────── 舱内：控制室（高光） ───────── */
+const inn=grp(dome);
+const polar=(a,r,y=0)=>V(Math.sin(a)*r,y,Math.cos(a)*r);
+const at=(a,r,y=0,out=false)=>{const g=grp(inn);g.position.copy(polar(a,r,y));g.rotation.y=a+(out?0:PI);return g}; // 默认 +z 朝圆心
+const screens=[];
+function makeScreen(draw){const c=document.createElement('canvas');c.width=384;c.height=240;const g=c.getContext('2d');const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;tex.anisotropy=8;
+  const s={g,tex,draw,mat:new THREE.MeshBasicMaterial({map:tex,color:new THREE.Color(1.25,1.25,1.25)})};screens.push(s);return s}
+const scrBase=(g,title)=>{g.fillStyle='#04111c';g.fillRect(0,0,384,240);g.strokeStyle='rgba(120,200,255,.11)';g.lineWidth=1;
+  for(let x=24;x<384;x+=42){g.beginPath();g.moveTo(x,36);g.lineTo(x,228);g.stroke()}for(let y=36;y<232;y+=32){g.beginPath();g.moveTo(12,y);g.lineTo(372,y);g.stroke()}
+  g.fillStyle='#9fe2ff';g.font='600 15px Consolas,monospace';g.textAlign='left';g.fillText(title,14,23);g.fillStyle='#ff9a3c';g.fillRect(346,12,24,6)};
+makeScreen((g,t)=>{scrBase(g,'ATMOS  O2 / CO2');const line=(col,f,ph,amp,base,fillA)=>{g.beginPath();for(let x=12;x<=372;x+=6){const y=base+Math.sin(x*f+t*.9+ph)*amp+Math.sin(x*f*3.3+t*1.7+ph)*amp*.35;x===12?g.moveTo(x,y):g.lineTo(x,y)}
+    g.strokeStyle=col;g.lineWidth=2.6;g.stroke();if(fillA){g.lineTo(372,228);g.lineTo(12,228);g.closePath();g.fillStyle=fillA;g.fill()}};
+  line('#5fd8ff',.03,0,26,110,'rgba(95,216,255,.13)');line('#ffb35a',.022,2,16,170,null);g.fillStyle='#d8f3ff';g.font='600 26px Consolas,monospace';g.textAlign='right';g.fillText((20.9+Math.sin(t*.3)*.04).toFixed(2)+'%',368,62)});
+makeScreen((g,t)=>{scrBase(g,'RADAR  SECTOR 07');const cx=192,cy=134,r=92;g.strokeStyle='rgba(110,215,255,.5)';g.lineWidth=1.4;for(const k of[1,.66,.33]){g.beginPath();g.arc(cx,cy,r*k,0,TAU);g.stroke()}
+  g.beginPath();g.moveTo(cx-r,cy);g.lineTo(cx+r,cy);g.moveTo(cx,cy-r);g.lineTo(cx,cy+r);g.stroke();const a=t*1.3;
+  for(let k=0;k<26;k++){g.beginPath();g.moveTo(cx,cy);g.arc(cx,cy,r,a-k*.035-.035,a-k*.035);g.closePath();g.fillStyle=`rgba(95,216,255,${.42*(1-k/26)})`;g.fill()}
+  for(const[bx,by,c]of[[40,-30,'#ffb35a'],[-55,22,'#d8f3ff'],[-18,-62,'#d8f3ff'],[62,48,'#d8f3ff']]){const ba=Math.atan2(by,bx);let d=((a-ba)%TAU+TAU)%TAU;g.globalAlpha=Math.max(.15,1-d/4);g.fillStyle=c;g.beginPath();g.arc(cx+bx,cy+by,4,0,TAU);g.fill()}g.globalAlpha=1});
+makeScreen((g,t)=>{scrBase(g,'POWER  BUS A/B');for(let i=0;i<10;i++){const h=38+120*(.5+.5*Math.sin(t*.7+i*1.3))*(.6+.4*Math.sin(i*2.1));g.fillStyle=i===6?'#ffb35a':'#5fd8ff';g.globalAlpha=.9;g.fillRect(26+i*34,224-h,22,h)}g.globalAlpha=1;
+  g.fillStyle='#d8f3ff';g.font='600 26px Consolas,monospace';g.textAlign='right';g.fillText((41.2+Math.sin(t*.5)*1.6).toFixed(1)+' kW',368,62)});
+makeScreen((g,t)=>{scrBase(g,'SITE MAP  S-07');const o=[117,50],s=7.5;g.strokeStyle='#5fd8ff';g.lineWidth=2;g.strokeRect(o[0],o[1],150,150+24);const P=(x,z)=>[o[0]+75+x*s*.5,o[1]+87+z*s*.5];
+  let p=P(0,0);g.beginPath();g.arc(p[0],p[1],26,0,TAU);g.stroke();g.fillStyle='rgba(255,179,90,.3)';g.fill();p=P(13.4,-4.5);g.setLineDash([4,4]);g.beginPath();g.arc(p[0],p[1],16,0,TAU);g.stroke();g.setLineDash([]);
+  for(const q of[P(-12.5,12.2),P(12.8,13.6)]){g.beginPath();g.arc(q[0],q[1],14,0,TAU);g.stroke()}p=P(0,8.5);g.strokeRect(p[0]-11,p[1]-8,22,16);p=P(-14.6,0);g.strokeRect(p[0]-7,p[1]-14,14,28);
+  p=P(-4.9,17);g.fillStyle=Math.sin(t*5)>0?'#ffb35a':'#5a4020';g.fillRect(p[0]-4,p[1]-4,8,8);g.fillStyle='#9fe2ff';g.font='12px Consolas,monospace';g.textAlign='left';
+  ['DOME  NOMINAL','PRINT 62%','LP-1  OCC','LP-2  OCC','ROVER CHG'].forEach((s2,i)=>g.fillText(s2,282,66+i*22));g.textAlign='right';g.fillText('N↑',108,64)});
+makeScreen((g,t)=>{scrBase(g,'TELEMETRY');const rows=[['CABIN PRESS','101.3 kPa',.84],['HUMIDITY','42 %',.42],['CO2 SCRUB','0.04 %',.2],['H2O LOOP','96 %',.96],['THERMAL','21.5 °C',.6],['COMMS','−71 dBm',.7]];
+  rows.forEach((r,i)=>{const y=58+i*30;g.fillStyle='#9fe2ff';g.font='13px Consolas,monospace';g.textAlign='left';g.fillText(r[0],16,y);g.textAlign='right';g.fillStyle='#d8f3ff';g.fillText(r[1],236,y);
+    g.fillStyle='rgba(120,200,255,.16)';g.fillRect(250,y-10,118,9);g.fillStyle=i===2?'#ffb35a':'#5fd8ff';g.fillRect(250,y-10,118*Math.min(1,r[2]+Math.sin(t*.8+i)*.04),9)})});
+{// 监控屏墙
+  for(let i=-2;i<=2;i++){const g=at(PI+i*.31,5.85,2.1);box(g,1.86,1.14,.08,mat.dark,0,0,-.05);add(g,new THREE.PlaneGeometry(1.72,1.0),screens[i+2].mat,0,0,0);
+    box(g,.1,1.5,.1,mat.dark,0,-1.3,-.1);box(g,.5,.06,.4,mat.dark,0,-1.95,-.1)}
+  for(const y of[1.45,2.75]){const g=new THREE.TorusGeometry(5.92,.035,6,40,1.56);g.rotateX(PI/2);add(inn,g,mat.dark,0,y,0).rotation.y=PI/2+.78}
+  // 弧形工作台 + 座椅
+  for(let i=-3;i<=3;i++){const g=at(PI+i*.205,4.35,0);box(g,.93,.07,.78,mat.desk,0,.84,0);box(g,.9,.72,.05,mat.cream,0,.46,-.34);box(g,.9,.03,.03,lampMat(0x6ad0ff,1.4),0,.16,-.37);
+    if(i%3!==0||i===0){const s=add(g,new THREE.PlaneGeometry(.52,.32),screens[(i+5)%5].mat,0,1.07,-.2);s.rotation.x=-.35;box(g,.56,.36,.03,mat.dark,0,1.065,-.225).rotation.x=-.35}
+    box(g,.42,.02,.15,mat.black,0,.885,.14);if(i===-3||i===3){box(g,.05,.75,.78,mat.cream,i<0?.44:-.44,.45,0)}}
+  for(const da of[-.44,0,.44]){const g=at(PI+da,3.42,.12,true);cyl(g,.3,.3,.04,mat.dark,0,.03,0,5);cyl(g,.04,.04,.42,mat.steel,0,.25,0,8);rbox(g,.52,.11,.5,.05,mat.cream,0,.5,0);
+    const b=rbox(g,.5,.68,.09,.04,mat.cream,0,.95,-.26);b.rotation.x=-.12;box(g,.3,.1,.1,mat.orange,0,1.3,-.3);for(const sx of[-1,1])box(g,.05,.04,.34,mat.dark,sx*.28,.7,0)}
+  // 地面 / 地毯
+  cyl(inn,6.72,6.72,.12,[mat.cream,mat.floorIn,mat.cream],0,.06,0,64);cyl(inn,2.5,2.5,.02,mat.rug,0,.13,0,48);
+  {const g=new THREE.TorusGeometry(2.5,.03,6,64);g.rotateX(PI/2);add(inn,g,lampMat(0x6ad0ff,1.2),0,.14,0)}
+  // 门（内侧）
+  {const g=at(0,6.4,0);rbox(g,2.2,2.5,.3,.08,mat.hull2,0,1.37,0);for(const sx of[-1,1]){box(g,.92,2.1,.06,mat.panel,sx*.47,1.2,.16);porthole(g,V(sx*.47,1.6,.2),V(sx*.47,1.6,10),.18)}lamp(g,0,2.45,.17,0x7dffb0,4,.04)}
+  {const g=at(-PI/2,6.4,0);rbox(g,1.7,2.4,.3,.08,mat.hull2,0,1.32,0);box(g,1.3,2.05,.06,mat.panel,0,1.2,.16);porthole(g,V(0,1.6,.2),V(0,1.6,10),.18);lamp(g,0,2.38,.17,0x7dffb0,4,.04)}
+  // 休息区
+  for(const a of[.6,.95,1.3]){const g=at(a,5.4,.12);rbox(g,1.55,.4,.85,.1,mat.sofa,0,.26,0);rbox(g,1.55,.6,.24,.1,mat.sofa,0,.62,-.36);rbox(g,1.4,.12,.62,.05,mat.cream,0,.5,.06);
+    if(a===.95){const p=rbox(g,.36,.3,.12,.05,mat.orange,.35,.72,-.2);p.rotation.x=-.3}}
+  {const p=polar(.95,3.95,.12);cyl(inn,1.75,1.75,.016,mat.rug2,polar(.95,4.5).x,.135,polar(.95,4.5).z,40);cyl(inn,.55,.55,.05,mat.hull,p.x,.56,p.z,28);cyl(inn,.05,.05,.4,mat.steel,p.x,.34,p.z,8);cyl(inn,.3,.3,.03,mat.dark,p.x,.14,p.z,20);
+    box(inn,.3,.015,.2,lampMat(0x6ad0ff,1.2),p.x+.1,.6,p.z);const q=polar(1.63,5.75,.12);cyl(inn,.025,.025,1.7,mat.steel,q.x,.97,q.z,6);cyl(inn,.2,.2,.03,mat.dark,q.x,.14,q.z,14);cyl(inn,.14,.22,.3,lampMat(0xffd49a,3.2),q.x,1.9,q.z,16)}
+  // 植物舱
+  for(const a of[-.62,-.95,-1.28]){const g=at(a,5.45,.12);cyl(g,.56,.62,.4,mat.hull,0,.2,0,24);cyl(g,.5,.5,1.9,mat.glass,0,1.35,0,24,true);cyl(g,.57,.5,.22,mat.hull,0,2.41,0,24);
+    cyl(g,.38,.38,.02,lampMat(0xffd0e6,2.6),0,2.29,0,20);cyl(g,.47,.47,.08,mat.soil,0,.43,0,20);cyl(g,.03,.04,1.1,mat.leaf[2],0,1.0,0,6);
+    for(let k=0;k<9;k++){const r=rr(.05,.3),b=rnd()*TAU,m=add(g,new THREE.IcosahedronGeometry(rr(.11,.22),0),mat.leaf[k%3],Math.cos(b)*r,rr(.6,1.85),Math.sin(b)*r);m.scale.y=rr(.6,1.1);m.rotation.set(rnd()*3,rnd()*3,0)}}
+  {const g=at(-1.72,5.6,.12);box(g,1.2,.45,.45,mat.cream,0,.22,0);for(let k=0;k<6;k++)add(g,new THREE.IcosahedronGeometry(rr(.12,.2),0),mat.leaf[k%3],rr(-.45,.45),.52+rr(0,.2),rr(-.1,.1))}
+  // 工作台 / 机柜
+  {const g=at(2.14,5.2,.12);box(g,1.9,.07,.8,mat.desk,0,.9,0);for(const sx of[-1,1])box(g,.06,.88,.7,mat.steel,sx*.88,.44,0);rbox(g,.4,.24,.26,.03,mat.orange,-.55,1.06,-.1);
+    box(g,.5,.14,.3,mat.hull,.3,1.0,0);for(const sx of[-1,1])cyl(g,.08,.08,.36,mat.black,.3+sx*.16,.98,0,10).rotation.x=PI/2;
+    strut(g,V(.8,.93,-.3),V(.6,1.5,-.2),.015,mat.steel);lamp(g,.6,1.5,-.2,0xffe2b0,5,.04);add(g,new THREE.PlaneGeometry(.5,.32),screens[2].mat,-.05,1.12,-.3)}
+  {const g=at(-2.14,5.55,.12);for(const dx of[-.45,.45]){rbox(g,.8,2.0,.6,.04,mat.dark,dx,1.0,0);for(let r=0;r<6;r++){box(g,.66,.02,.02,mat.panel,dx,.4+r*.28,.31);(r%2?blink(g,dx-.25,.48+r*.28,.31,0x40ff90,rr(.5,1.6),rnd(),.018,.5):lamp(g,dx+.22,.48+r*.28,.31,0x6ad0ff,4,.018))}}}
+  // 全息地球
+  cyl(inn,.95,1.12,.5,mat.dark,0,.38,0,32);{const g=new THREE.TorusGeometry(.82,.03,6,48);g.rotateX(PI/2);add(inn,g,lampMat(0x6ad0ff,3),0,.64,0)}
+  cyl(inn,.9,.45,1.25,new THREE.MeshBasicMaterial({color:0x2a7fd0,transparent:true,opacity:.05,blending:THREE.AdditiveBlending,side:THREE.DoubleSide,depthWrite:false}),0,1.28,0,32,true);
+}
+const holo=grp(inn,0,2.6,0), holoRings=[];
+{const tex=canvasTex(1024,512,(g,w,h)=>{const X=l=>(l+180)/360*w,Y=l=>(90-l)/180*h;
+  const lands=[[[-168,66],[-140,70],[-95,72],[-80,62],[-60,52],[-78,35],[-81,25],[-97,26],[-105,20],[-97,16],[-87,14],[-83,9],[-110,23],[-124,40],[-130,55],[-165,58]],
+    [[-80,10],[-62,10],[-50,0],[-35,-7],[-40,-22],[-58,-38],[-68,-54],[-74,-45],[-70,-18],[-81,-5]],
+    [[-17,21],[-6,35],[10,37],[32,31],[43,11],[51,11],[40,-15],[32,-29],[20,-35],[13,-12],[9,4],[-8,5],[-17,12]],
+    [[-10,37],[-9,43],[-2,48],[5,58],[10,64],[25,71],[60,69],[100,77],[140,72],[170,66],[160,60],[140,52],[130,42],[122,31],[110,21],[105,10],[100,14],[92,22],[80,8],[73,20],[60,25],[50,30],[36,36],[27,37],[20,40],[12,44],[3,43]],
+    [[35,30],[45,13],[58,20],[50,30]],[[114,-22],[131,-12],[142,-11],[153,-26],[146,-39],[131,-32],[115,-34]],[[-52,60],[-22,70],[-20,81],[-55,82],[-70,77]],
+    [[-180,-72],[180,-72],[180,-90],[-180,-90]],[[130,33],[141,36],[142,44],[136,36]],[[96,5],[106,-6],[120,-8],[118,2],[108,3]],[[-6,50],[2,52],[-2,58],[-7,57]],[[44,-13],[50,-16],[47,-25],[43,-22]]];
+  const mc=document.createElement('canvas');mc.width=w;mc.height=h;const m=mc.getContext('2d');m.fillStyle='#fff';
+  for(const L of lands){m.beginPath();L.forEach((q,i)=>i?m.lineTo(X(q[0]),Y(q[1])):m.moveTo(X(q[0]),Y(q[1])));m.closePath();m.fill()}
+  const d=m.getImageData(0,0,w,h).data;g.clearRect(0,0,w,h);g.fillStyle='rgba(30,110,220,.2)';g.fillRect(0,0,w,h);
+  g.strokeStyle='rgba(120,200,255,.55)';g.lineWidth=1.5;for(let l=-150;l<=180;l+=30){g.beginPath();g.moveTo(X(l),0);g.lineTo(X(l),h);g.stroke()}for(let l=-60;l<=60;l+=30){g.beginPath();g.moveTo(0,Y(l));g.lineTo(w,Y(l));g.stroke()}
+  g.fillStyle='rgba(70,170,255,.95)';for(let y=3;y<h;y+=6)for(let x=3;x<w;x+=6)if(d[(y*w+x)*4+3]>128)g.fillRect(x-1.7,y-1.7,3.4,3.4)});
+  const earth=sph(holo,.85,new THREE.MeshBasicMaterial({map:tex,color:new THREE.Color(.8,1.15,1.6),transparent:true,side:THREE.DoubleSide,depthWrite:false}),0,0,0,48,32);
+  holo.userData.earth=earth;earth.rotation.z=.4;
+  sph(holo,.93,new THREE.MeshBasicMaterial({color:0x3a9cff,transparent:true,opacity:.07,blending:THREE.AdditiveBlending,side:THREE.BackSide,depthWrite:false}),0,0,0,32,20);
+  for(const[r,tx,tz]of[[1.15,1.2,.2],[1.32,1.75,-.35]]){const g=grp(holo);g.rotation.set(tx,0,tz);add(g,new THREE.TorusGeometry(r,.007,4,96),new THREE.MeshBasicMaterial({color:new THREE.Color(.5,1.1,1.6),transparent:true,opacity:.7,blending:THREE.AdditiveBlending,depthWrite:false}));
+    lamp(g,r,0,0,0xbfe8ff,5,.028);holoRings.push(g)}
+}
+// 悬浮环形光圈
+const halo=grp(inn,0,5.0,0), halo2=grp(inn,0,5.45,0);
+{add(halo,new THREE.TorusGeometry(3.1,.05,8,128),lampMat(0xffe0b4,2.7)).rotation.x=PI/2;add(halo,new THREE.TorusGeometry(3.1,.11,8,128),M(0xf4ede2,{roughness:.5}),0,.1,0).rotation.x=PI/2;
+  add(halo2,new THREE.TorusGeometry(1.9,.022,6,96),lampMat(0x9fdcff,2.5)).rotation.x=PI/2}
+{const p1=new THREE.PointLight(0xffc68c,118,10.4,2);p1.position.set(0,4.6,0);scene.add(p1);
+}
+
+/* ───────── 阴影标记 ───────── */
+scene.traverse(o=>{if(!o.isMesh)return;const m=Array.isArray(o.material)?o.material[0]:o.material;if((m.isMeshStandardMaterial||m.isMeshLambertMaterial)&&!m.transparent){o.castShadow=!o.userData.recv;o.receiveShadow=true}});
+
+/* ───────── 静态网格按材质合并（约 1500 个 draw call → 几十个） ───────── */
+for(const o of[trolley,armYaw,dishYaw,holo,halo,halo2,...lumps.map(l=>l.m)])o.userData.dyn=true;
+{scene.updateMatrixWorld(true);const buckets=new Map(),kill=[];
+  scene.traverse(o=>{if(!o.isMesh||Array.isArray(o.material)||o.geometry.attributes.color||!o.geometry.attributes.uv)return;
+    for(let p=o;p;p=p.parent)if(p.userData.dyn)return;
+    const key=o.material.uuid+(o.castShadow?'c':'')+(o.receiveShadow?'r':'');let b=buckets.get(key);
+    if(!b)buckets.set(key,b={mat:o.material,cast:o.castShadow,recv:o.receiveShadow,geos:[]});
+    const g=o.geometry.index?o.geometry.toNonIndexed():o.geometry.clone();g.applyMatrix4(o.matrixWorld);
+    for(const k of Object.keys(g.attributes))if(k!=='position'&&k!=='normal'&&k!=='uv')g.deleteAttribute(k);
+    b.geos.push(g);kill.push(o)});
+  for(const o of kill)o.parent.remove(o);
+  for(const b of buckets.values()){const m=new THREE.Mesh(b.geos.length>1?mergeGeometries(b.geos):b.geos[0],b.mat);m.castShadow=b.cast;m.receiveShadow=b.recv;scene.add(m);b.geos.forEach(g=>b.geos.length>1&&g.dispose())}}
+
+/* ───────── 标签（带引线，逐帧跟随） ───────── */
+const NS='http://www.w3.org/2000/svg',svg=document.getElementById('lines'),labBox=document.getElementById('labels'),labels=[];
+function label(parent,x,y,z,zh,en,zone='out',side=1,oy=-46,ox=30){const obj=grp(parent,x,y,z);const el=document.createElement('div');el.className='lab '+(side>0?'r':'l');el.innerHTML=`<b>${zh}</b><i>${en}</i>`;labBox.appendChild(el);
+  const ln=document.createElementNS(NS,'polyline'),dot=document.createElementNS(NS,'circle');dot.setAttribute('r',2.4);svg.append(ln,dot);el.style.display=ln.style.display=dot.style.display='none';labels.push({obj,el,ln,dot,zone,side,ox,oy,vis:false})}
+label(dome,0,7.3,0,'穹顶开发中心','DEV CENTER','out',1,-58);
+label(foy,2.6,3.5,11,'前厅 · 双道气闸','FOYER / AIRLOCK','out',1,-40);
+label(hab,0,4.3,1,'圆柱居住舱','HAB-02','out',-1,-52);
+label(suitAnchor,0,0,0,'宇航服通廊','EVA SUIT BAY','out',-1,-34);
+label(padG,0,4.2,0,'着陆器 · 着陆垫','LANDER / LP-1','out',-1,-44);
+label(craneAnchor,0,0,0,'龙门吊','GANTRY 20T','out',1,-40);
+label(towerG,0,9.6,0,'通信塔','COMMS MAST','out',-1,-40);
+label(dishG,0,5.2,0,'深空天线','DSN DISH','out',1,-40);
+label(pd,0,3.9,-1,'3D 打印穹顶 · 62%','PRINT DOME B','out',1,-46);
+label(nozzleAnchor,0,0,0,'打印机械臂','ARM-3','out',-1,-50);
+label(shipPad,0,2.9,0,'三角翼飞船','SHUTTLE / LP-2','out',1,-46);
+label(rover,0,3.2,0,'六轮月球车','ROVER-06','out',-1,-38);
+label(charger,0,1.7,0,'充电桩','CHARGER','out',-1,-22);
+label(inn,0,3.5,0,'全息地球','HOLO-EARTH','in',1,-50);
+label(inn,0,2.75,-5.8,'监控屏墙','MISSION WALL','in',1,-40);
+label(inn,polar(PI+.62,4.3).x,1.0,polar(PI+.62,4.3).z,'工作台','CONSOLE','in',-1,-36);
+label(inn,polar(.95,5.2).x,1.2,polar(.95,5.2).z,'休息区','LOUNGE','in',1,-40);
+label(inn,polar(-.95,5.4).x,2.6,polar(-.95,5.4).z,'植物舱','BIO POD','in',-1,-40);
+label(halo,3.1,0,0,'环形光圈','HALO LIGHT','in',1,-34);
+const _v=V();
+function updateLabels(){const W=innerWidth,H=innerHeight,inside=camera.position.length()<6.9&&camera.position.y<6.9,vis=[];
+  for(const L of labels){L.obj.getWorldPosition(_v);const dist=_v.distanceTo(camera.position);_v.project(camera);
+    const ok=((L.zone==='in')===inside)&&_v.z<1&&Math.abs(_v.x)<1.02&&Math.abs(_v.y)<1.02&&dist>1.2;
+    if(ok){L.sx=(_v.x*.5+.5)*W;L.sy=(-_v.y*.5+.5)*H;L.lx=L.sx+L.side*L.ox;L.ly=L.sy+L.oy;vis.push(L)}
+    if(ok!==L.vis){L.vis=ok;const d=ok?'':'none';L.el.style.display=d;L.ln.style.display=d;L.dot.style.display=d}}
+  vis.sort((a,b)=>a.ly-b.ly);
+  for(let i=1;i<vis.length;i++)for(let j=0;j<i;j++){const a=vis[j],b=vis[i];if(a.side===b.side&&Math.abs(a.lx-b.lx)<150&&Math.abs(b.ly-a.ly)<36)b.ly=a.ly+36}
+  for(const L of vis){const ex=L.lx+L.side*10;L.el.style.transform=`translate(${ex.toFixed(1)}px,${L.ly.toFixed(1)}px) translate(${L.side>0?'0':'-100%'},-50%)`;
+    L.ln.setAttribute('points',`${L.sx.toFixed(1)},${L.sy.toFixed(1)} ${L.lx.toFixed(1)},${L.ly.toFixed(1)} ${ex.toFixed(1)},${L.ly.toFixed(1)}`);L.dot.setAttribute('cx',L.sx.toFixed(1));L.dot.setAttribute('cy',L.sy.toFixed(1))}}
+
+/* ───────── 镜头 ───────── */
+const controls=new OrbitControls(camera,canvas);
+controls.enableDamping=true;controls.dampingFactor=.07;controls.maxPolarAngle=PI*.56;controls.minDistance=.8;controls.maxDistance=320;controls.zoomSpeed=.8;
+const HOME=V(0,-2.3,0), EL=rad(28);
+const fitPts=[],tallPts=[V(-9.5,10.8,-14),V(9.5,10.8,-14),V(-16.6,13.2,-15.6),V(0,8.4,0),V(15.4,6.5,-15.3)];
+for(const sx of[-20.6,20.6])for(const sz of[-20.6,20.6])for(const y of[-5.55,0])fitPts.push(V(sx,y,sz));
+const tcam=new THREE.PerspectiveCamera();
+// 让底座在画面里占 ~78%（取宽高中更紧的一边），高处物体不出框
+function fitDist(dir,tgt,fov=camera.fov){tcam.fov=fov;tcam.aspect=camera.aspect;tcam.updateProjectionMatrix();let lo=15,hi=600;
+  for(let i=0;i<24;i++){const mid=(lo+hi)/2;tcam.position.copy(tgt).addScaledVector(dir,mid);tcam.lookAt(tgt);tcam.updateMatrixWorld();let m=0;
+    for(const p of fitPts){_v.copy(p).project(tcam);m=Math.max(m,Math.abs(_v.x)/.78,Math.abs(_v.y)/.86)}
+    for(const p of tallPts){_v.copy(p).project(tcam);m=Math.max(m,Math.abs(_v.x)/.95,Math.abs(_v.y)/.93)}
+    if(m>1)lo=mid;else hi=mid}return hi}
+const dirOf=a=>V(Math.sin(a)*Math.cos(EL),Math.sin(EL),Math.cos(a)*Math.cos(EL));
+const VIEWS={entry:{pos:V(6.6,3.5,27.5),tgt:V(-1.7,1.6,12.2),fov:32},print:{pos:V(20.5,9.2,14.5),tgt:V(12.6,1.8,-1.4),fov:32},inside:{pos:V(3.9,2.95,3.7),tgt:V(0,2.2,-.4),fov:56}};
+let mode='overview',userZoom=false,fly=null;
+{const d=dirOf(-.52);camera.position.copy(HOME).addScaledVector(d,fitDist(d,HOME,32));controls.target.copy(HOME);controls.autoRotate=true;controls.autoRotateSpeed=.4;controls.update()}
+const ease=k=>k<.5?4*k*k*k:1-Math.pow(-2*k+2,3)/2;
+function flyTo(pos,tgt,fov,dur,then){fly={p0:camera.position.clone(),t0:controls.target.clone(),f0:camera.fov,p1:pos.clone(),t1:tgt.clone(),f1:fov,t:0,dur,then};controls.enabled=false}
+function go(name){mode=name;userZoom=false;controls.autoRotate=false;controls.minDistance=.8;controls.maxDistance=320;
+  document.querySelectorAll('#views button').forEach(b=>b.classList.toggle('on',b.dataset.v===name));
+  if(name==='overview'){const inside=camera.position.length()<8;const a=inside?-.52:Math.atan2(camera.position.x-controls.target.x,camera.position.z-controls.target.z);const d=dirOf(a);
+    flyTo(HOME.clone().addScaledVector(d,fitDist(d,HOME,32)),HOME,32,2.4,()=>{controls.autoRotate=true;controls.autoRotateSpeed=.4})}
+  else{const v=VIEWS[name];flyTo(v.pos,v.tgt,v.fov,name==='inside'?3.0:2.4,()=>{if(name==='inside'){controls.maxDistance=5.7;controls.autoRotate=true;controls.autoRotateSpeed=-.3}})}}
+document.querySelectorAll('#views button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.v)));
+canvas.addEventListener('wheel',()=>{userZoom=true},{passive:true});
+const touches=new Set();canvas.addEventListener('pointerdown',e=>{touches.add(e.pointerId);if(touches.size>1||e.button===2)userZoom=true});
+addEventListener('pointerup',e=>touches.delete(e.pointerId));addEventListener('pointercancel',e=>touches.delete(e.pointerId));
+
+/* ───────── 环境面板 ───────── */
+const $=id=>document.getElementById(id),p2=n=>String(n).padStart(2,'0');
+function updateEnv(t){const d=new Date();$('e-clock').textContent=`${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+  $('e-out').textContent='−'+(173+Math.sin(t*.13)*.9+Math.sin(t*.71)*.2).toFixed(1);$('e-in').textContent=(21.5+Math.sin(t*.09)*.3).toFixed(1);
+  $('e-o2').textContent=(20.9+Math.sin(t*.3)*.04).toFixed(2);$('e-kw').textContent=(41.2+Math.sin(t*.5)*1.6+Math.sin(t*1.9)*.4).toFixed(1);
+  const bat=82+Math.sin(t*.05)*3;$('e-bat').textContent=bat.toFixed(0);$('e-bar').style.width=bat+'%'}
+
+/* ───────── 循环 ───────── */
+function resize(){const w=innerWidth,h=innerHeight;camera.aspect=w/h;camera.updateProjectionMatrix();renderer.setSize(w,h,false);composer.setSize(w,h);bloomSize()}
+addEventListener('resize',resize);
+const clock=new THREE.Clock();let t=0,scrAcc=1,envAcc=1,shAcc=1,first=true;const _d=V();
+function frame(){requestAnimationFrame(frame);const raw=clock.getDelta(),dt=Math.min(raw,.05);t+=dt;
+  // 动画
+  trolley.position.x=Math.sin(t*.16)*5.6;
+  armYaw.rotation.y=Math.sin(t*.35)*.13;armSh.rotation.z=-(.36+Math.sin(t*.5)*.03);armEl.rotation.z=-(1.24+Math.sin(t*.5+1)*.04);
+  arm.userData.wr.rotation.z=-PI-armSh.rotation.z-armEl.rotation.z; // 喷头保持竖直向下
+  for(const l of lumps){const k=(l.o+t*.07)%1;l.m.position.x=.15+k*(convL-.3);l.m.visible=k<.97}
+  dishYaw.rotation.y=Math.sin(t*.05)*1.2+.6;
+  holo.userData.earth.rotation.y=t*.22;holo.position.y=2.6+Math.sin(t*.9)*.04;holoRings[0].rotation.y=t*.5;holoRings[1].rotation.y=-t*.35;
+  halo.position.y=5.0+Math.sin(t*.6)*.06;halo2.rotation.y=t*.2;halo2.rotation.x=Math.sin(t*.4)*.12;
+  for(const b of blinkers){const on=((t+b.phase*b.period)%b.period)<b.period*b.duty;b.mat.color.copy(b.base).multiplyScalar(on?7:.12)}
+  scrAcc+=dt;if(scrAcc>.1){scrAcc=0;for(const s of screens){s.draw(s.g,t);s.tex.needsUpdate=true}}
+  shAcc+=dt;if(shAcc>.25){shAcc=0;renderer.shadowMap.needsUpdate=true}
+  envAcc+=dt;if(envAcc>.5){envAcc=0;updateEnv(t)}
+  // 镜头
+  if(fly){fly.t+=Math.min(raw,.25)/fly.dur;const k=ease(Math.min(fly.t,1));camera.position.lerpVectors(fly.p0,fly.p1,k);controls.target.lerpVectors(fly.t0,fly.t1,k);
+    camera.fov=fly.f0+(fly.f1-fly.f0)*k;camera.updateProjectionMatrix();camera.lookAt(controls.target);
+    if(fly.t>=1){const th=fly.then;fly=null;controls.enabled=true;th&&th()}}
+  else{controls.update(dt);
+    if(mode==='overview'&&!userZoom){_d.subVectors(camera.position,controls.target).normalize();camera.position.copy(controls.target).addScaledVector(_d,fitDist(_d,controls.target));}}
+  camera.updateMatrixWorld();
+  composer.render(dt);updateLabels();
+  if(first){first=false;document.getElementById('load').classList.add('off')}}
+window.__site={go,camera,controls,renderer,scene,composer};
+frame();
+</script>
+</body>
+</html>
