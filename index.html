@@ -51,6 +51,7 @@ canvas#gl{display:block;position:fixed;inset:0;width:100%;height:100%;touch-acti
   #env{right:12px;top:12px;width:150px;padding:10px}#env .clock{font-size:18px}#env dt{font-size:10px}#env dd{font-size:11px}#env .sub{display:none}
   #views{left:0;right:0;top:auto;bottom:40px;transform:none;flex-direction:row;justify-content:center;gap:6px}
   #views button{width:auto;padding:9px 12px}#views button i{display:none}
+  #env dl>*:nth-child(n+9){display:none}
   .lab i{display:none}#hint{bottom:12px}
 }
 </style>
@@ -619,9 +620,11 @@ for(const o of[trolley,armYaw,dishYaw,holo,halo,halo2,...lumps.map(l=>l.m)])o.us
   for(const b of buckets.values()){const m=new THREE.Mesh(b.geos.length>1?mergeGeometries(b.geos):b.geos[0],b.mat);m.castShadow=b.cast;m.receiveShadow=b.recv;scene.add(m);b.geos.forEach(g=>b.geos.length>1&&g.dispose())}}
 
 /* ───────── 标签（带引线，逐帧跟随） ───────── */
+// 窄屏（手机）只留主要标签，避免挤成一团
+const MAIN=new Set(['穹顶开发中心','前厅 · 双道气闸','着陆器 · 着陆垫','3D 打印穹顶 · 62%','三角翼飞船','全息地球','监控屏墙','休息区']);
 const NS='http://www.w3.org/2000/svg',svg=document.getElementById('lines'),labBox=document.getElementById('labels'),labels=[];
 function label(parent,x,y,z,zh,en,zone='out',side=1,oy=-46,ox=30){const obj=grp(parent,x,y,z);const el=document.createElement('div');el.className='lab '+(side>0?'r':'l');el.innerHTML=`<b>${zh}</b><i>${en}</i>`;labBox.appendChild(el);
-  const ln=document.createElementNS(NS,'polyline'),dot=document.createElementNS(NS,'circle');dot.setAttribute('r',2.4);svg.append(ln,dot);el.style.display=ln.style.display=dot.style.display='none';labels.push({obj,el,ln,dot,zone,side,ox,oy,vis:false})}
+  const ln=document.createElementNS(NS,'polyline'),dot=document.createElementNS(NS,'circle');dot.setAttribute('r',2.4);svg.append(ln,dot);el.style.display=ln.style.display=dot.style.display='none';labels.push({obj,el,ln,dot,zone,side,ox,oy,vis:false,main:MAIN.has(zh)})}
 label(dome,0,7.3,0,'穹顶开发中心','DEV CENTER','out',1,-58);
 label(foy,2.6,3.5,11,'前厅 · 双道气闸','FOYER / AIRLOCK','out',1,-40);
 label(hab,0,4.3,1,'圆柱居住舱','HAB-02','out',-1,-52);
@@ -644,7 +647,7 @@ label(halo,3.1,0,0,'环形光圈','HALO LIGHT','in',1,-34);
 const _v=V();
 function updateLabels(){const W=innerWidth,H=innerHeight,inside=camera.position.length()<6.9&&camera.position.y<6.9,vis=[];
   for(const L of labels){L.obj.getWorldPosition(_v);const dist=_v.distanceTo(camera.position);_v.project(camera);
-    const ok=((L.zone==='in')===inside)&&_v.z<1&&Math.abs(_v.x)<1.02&&Math.abs(_v.y)<1.02&&dist>1.2;
+    const ok=((L.zone==='in')===inside)&&(W>=760||L.main)&&_v.z<1&&Math.abs(_v.x)<1.02&&Math.abs(_v.y)<1.02&&dist>1.2;
     if(ok){L.sx=(_v.x*.5+.5)*W;L.sy=(-_v.y*.5+.5)*H;L.lx=L.sx+L.side*L.ox;L.ly=L.sy+L.oy;vis.push(L)}
     if(ok!==L.vis){L.vis=ok;const d=ok?'':'none';L.el.style.display=d;L.ln.style.display=d;L.dot.style.display=d}}
   vis.sort((a,b)=>a.ly-b.ly);
