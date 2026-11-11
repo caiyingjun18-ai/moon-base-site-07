@@ -2,8 +2,8 @@
 
 单文件、可拖拽旋转缩放的 3D 桌面沙盘。所有模型由代码生成，three.js r170，无构建步骤。
 
-- **第一版**（`index.html`）：把原提示词原样交给 Claude Code 的结果
-- **第二版**（`v2.html`）：参考了原作的长处，并按真实航天资料迭代
+- **第一版**（[在线打开](https://caiyingjun18-ai.github.io/moon-base-site-07/)）：把原提示词原样交给 Claude Code 的结果
+- **第二版**（[在线打开](https://caiyingjun18-ai.github.io/moon-base-site-07/v2.html)）：参考了原作的长处，并按真实航天资料迭代
 - **升级版提示词**：[PROMPT-v2.md](PROMPT-v2.md)
 
 ## 来源与致谢
