@@ -95,7 +95,9 @@ canvas#gl{display:block;position:fixed;inset:0;width:100%;height:100%;touch-acti
   var ctrls=[];
   function probe(b,i){return new Promise(function(res,rej){var c=new AbortController();ctrls[i]=c;var t=setTimeout(function(){c.abort();rej()},12000);
     fetch(b+'/build/three.module.js',{signal:c.signal}).then(function(r){clearTimeout(t);r.ok?res(i):rej()}).catch(rej)})}
-  Promise.any(CDNS.map(probe)).then(function(i){
+  // 必须等整页解析完再取 #app 的文本：CDN 探测可能比页面下载先返回，那时只能拿到半截代码
+  var ready=new Promise(function(r){document.readyState==='loading'?document.addEventListener('DOMContentLoaded',r):r()});
+  Promise.all([Promise.any(CDNS.map(probe)),ready]).then(function(a){var i=a[0];
     ctrls.forEach(function(c,j){if(j!==i)try{c.abort()}catch(e){}});
     var b=CDNS[i];window.__CDN=b;
     var im=document.createElement('script');im.type='importmap';
