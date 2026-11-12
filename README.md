@@ -2,21 +2,33 @@
 
 单文件、可拖拽旋转缩放的 3D 桌面沙盘。所有模型由代码生成，three.js r170，无构建步骤。
 
-- **第一版**（[在线打开](https://caiyingjun18-ai.github.io/moon-base-site-07/)）：把原提示词原样交给 Claude Code 的结果
+- **第一版**（[在线打开](https://caiyingjun18-ai.github.io/moon-base-site-07/)）：只用一段文字提示词、不给参考图，交给 Claude Code 的结果
 - **第二版**（[在线打开](https://caiyingjun18-ai.github.io/moon-base-site-07/v2.html)）：参考了原作的长处，并按真实航天资料迭代
 - **升级版提示词**：[PROMPT-v2.md](PROMPT-v2.md)
 
 ## 来源与致谢
 
-创意和原始提示词来自 [@leaf_sanren](https://yeje-cpu.github.io/moon-base-3d/)，原作用 DeepSeek 完成。本仓库是用同一段提示词在 Claude Code 上做的对比。
+创意、原作和提示词都来自 [@leaf_sanren](https://x.com/leaf_sanren) 的 [moon-base-3d](https://github.com/YeJe-cpu/moon-base-3d)（[在线原作](https://yeje-cpu.github.io/moon-base-3d/)）。
 
-## 关于对比的公平性
+原作者在仓库里公开了一段「改进版提示词」，是他把多轮迭代的经验反推成文字写出来的，并注明还没实测。本仓库就是对这段提示词的一次实测。
 
-- 只有第一版是同提示词对比；第二版是看过原作之后做的。
-- Claude Code 会自己打开浏览器截图、修改、再截图，第一版是自测几轮后的结果。原作迭代了几轮未知。
+## 两边的做法不一样
+
+| | 原作 | 本仓库第一版 |
+|---|---|---|
+| 提示词 | 原作者的原始提示词 | 原作者的改进版提示词 |
+| 参考图 | 喂了参考视频的截图 | 没有 |
+| 写代码 | DeepSeek（DeepSeek Harness） | Claude Code（Claude Fable 5.2） |
+| 验收迭代 | Claude Code 当监工，共 12 轮 | Claude Code 自己开浏览器截图自测了几轮 |
+
+所以这不是两个模型的对决，而是在测「这段提示词单独够不够用」。原作一栏的信息来自原作者的 README。
+
+- 第二版是看过原作之后做的，不属于这次实测。
 - 只在一台 Intel UHD 核显笔记本上实测过。
 
-## 原始提示词
+## 使用的提示词
+
+来自原作者的 [02-improved-prompt.md](https://github.com/YeJe-cpu/moon-base-3d/blob/main/prompts/02-improved-prompt.md)。开头一句的措辞与原文略有不同（原文是「用 three.js 做一个单文件……」），其余一致。
 
 > 帮我做一个单文件、可拖拽旋转缩放的 3D 桌面沙盘：「月面建设工地与开发中心」。所有模型都用代码生成。可以用 three.js ，也可以去其他，你来评估确定：
 >
